@@ -11,6 +11,10 @@ class MainApplication : Application() {
         private const val WRITE_KEY = "1s4gjAsjU2O41t6JwCGsCgZf6sg"
         private const val DATA_PLANE_URL = "https://8b2e94cad5ff.ngrok.io"
         private const val CONTROL_PLANE_URL = "https://fcc1cb53a2cd.ngrok.io"
+
+//        private const val WRITE_KEY = "1tfId4G97HjdcJsBYSMwehHtmuN"
+//        private const val DATA_PLANE_URL = "https://8b2e94cad5ff.ngrok.io"
+//        private const val CONTROL_PLANE_URL = "https://api.dev.rudderlabs.com"
         lateinit var rudderClient: RudderClient
     }
 

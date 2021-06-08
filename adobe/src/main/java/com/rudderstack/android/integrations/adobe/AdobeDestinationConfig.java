@@ -3,11 +3,13 @@ package com.rudderstack.android.integrations.adobe;
 import java.util.Map;
 
 public class AdobeDestinationConfig {
-    final String url;
-    final Map<String, Object> contextDataVariables;
+    final String heartbeatTrackingServerUrl;
+    final Map<String, Object> contextData;
+    final Map<String, Object> rudderEventsToAdobeEvents;
 
-    public AdobeDestinationConfig(String url, Map<String, Object> eventMap) {
-        this.contextDataVariables = eventMap;
-        this.url = url;
+    public AdobeDestinationConfig(String heartbeatTrackingServerUrl, Map<String, Object> eventMap, Map<String, Object> rudderEventsToAdobeEventsMap) {
+        this.contextData = eventMap;
+        this.heartbeatTrackingServerUrl = heartbeatTrackingServerUrl;
+        this.rudderEventsToAdobeEvents = rudderEventsToAdobeEventsMap;
     }
 }

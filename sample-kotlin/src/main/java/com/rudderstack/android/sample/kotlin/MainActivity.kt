@@ -21,21 +21,24 @@ class MainActivity : AppCompatActivity() {
         val map1= mapOf("product_id" to "pro2", "name" to "games", "price" to 2000)
         val list= listOf(map, map1);
 
-        MainApplication.rudderClient.track("Order Completed",
-                RudderProperty()
-                        .putValue("order_id", "order123")
-                        //.putValue("product_id","pro123")
-                        .putValue("checkout_id", "check123")
-                        .putValue("name", "test")
-                        .putValue("custom_1", "string")
-                        .putValue("custom_2", 1230)
-                        .putValue("custom_3", true)
-                        .putValue("custom_4", answer1)
-                        .putValue("revenue", 8.99)
-                        .putValue("quantity", 2)
-                        .putValue("currency", "USD")
-                        .putValue("products", list)
-        )
+        MainApplication.rudderClient.track("Event Name");
+
+
+//        MainApplication.rudderClient.track("Order Completed",
+//                RudderProperty()
+//                        .putValue("order_id", "order123")
+//                        //.putValue("product_id","pro123")
+//                        .putValue("checkout_id", "check123")
+//                        .putValue("name", "test")
+//                        .putValue("custom_1", "string")
+//                        .putValue("custom_2", 1230)
+//                        .putValue("custom_3", true)
+//                        .putValue("custom_4", answer1)
+//                        .putValue("revenue", 8.99)
+//                        .putValue("quantity", 2)
+//                        .putValue("currency", "USD")
+//                        .putValue("products", list)
+//        )
 //
 //
 //        MainApplication.rudderClient.identify(user_id)
