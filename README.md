@@ -31,10 +31,11 @@ val rudderClient = RudderClient.getInstance(
         .build()
 )
 ```
-## Information (Will be updated properly)
+## Before running the app configure below tasks (Will be updated properly):
 
-Configure the ADBMobile.json at [Adobe Mobile Services](https://mobilemarketing.adobe.com) and download file and save it in your app -> main -> assets (create the folder if it is not present)
-Add any custom events or properties to dashboard.
+Configure the ADBMobile.json at [Adobe Mobile Services](https://mobilemarketing.adobe.com) and download file and save it in your sample-kotlin -> main -> assets (create the folder if it is not present).
+Inside the sample-kotlin -> libs -> MediaSDK.jar, import it as library.
+Map any custom events or properties to dashboard before sending any track or screen call.
 
 ## Send Events
 
