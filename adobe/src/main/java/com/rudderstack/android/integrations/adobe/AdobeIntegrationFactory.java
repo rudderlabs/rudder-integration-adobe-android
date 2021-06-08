@@ -30,6 +30,7 @@ import org.json.JSONObject;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -124,7 +125,7 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
                         try {
                             handleEcommerce(eventsMapping.get(eventName.toLowerCase()), element.getProperties());
                         } catch (JSONException e) {
-                            e.printStackTrace();
+                            RudderLogger.logError("JSONException occurred. Aborting track call.");
                         }
                         return;
                     }
@@ -137,7 +138,7 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
                     if(screenName == null) {
                         return;
                     }
-                    if(element.getProperties() != null || element.getProperties().size() != 0){
+                    if(isEmpty(element.getProperties())){
                         return;
                     }
                     Map<String, Object> eventProperties = element.getProperties();
@@ -176,18 +177,22 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
         Map<String, Object> contextData = new HashMap<>();
         contextData.put("&&events", eventName);
 
-        if (eventProperties != null && eventProperties.containsKey("products")) {
+        if (!isEmpty(eventProperties) && eventProperties.containsKey("products")) {
             String products = getProducts(getJSONArray(eventProperties.get("products")));
-            if (products != null) {
+            if (products.length() != 0) {
                 contextData.put("&&products", products);
             }
             eventProperties.remove("products");
         }
 
-        //Need to confirm if there is only order_id or OrderId as well  ???
-        if (eventProperties != null && eventProperties.containsKey("order_id")) {
+        if (!isEmpty(eventProperties) && eventProperties.containsKey("order_id")) {
             contextData.put("purchaseid", eventProperties.get("order_id"));
             eventProperties.remove("order_id");
+        }
+
+        if (!isEmpty(eventProperties) && eventProperties.containsKey("orderId")) {
+            contextData.put("purchaseid", eventProperties.get("orderId"));
+            eventProperties.remove("orderId");
         }
 
         // Handling the custom mapped properties
@@ -200,13 +205,13 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
             }
         }
 
-        //Add eventProperties that are left
-        if(eventProperties != null){
+        // Add eventProperties which are left
+        if(!isEmpty(eventProperties)){
             contextData.putAll(eventProperties);
             eventProperties.clear();
         }
 
-        //Track Call for E-Commerce event
+        // Track Call for E-Commerce event
         Analytics.trackAction((String) eventName, contextData);
     }
 
@@ -222,9 +227,7 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
         }
         if(object instanceof List){
             ArrayList<Object> arrayList = new ArrayList<>();
-            for(Object element: (List) object ) {
-                arrayList.add(element);
-            }
+            arrayList.addAll((Collection<?>) object);
             return new JSONArray(arrayList);
         }
         return new JSONArray((ArrayList) object);
@@ -232,39 +235,28 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
 
     // If eventProperties contains key of Products
     private String getProducts(JSONArray products) throws JSONException {
-        StringBuilder productProperties = new StringBuilder();
+        StringBuilder product = new StringBuilder();
+
         for(int i = 0; i < products.length(); i++) {
-            JSONObject product = (JSONObject) products.get(i);
+            JSONObject productObject = (JSONObject) products.get(i);
             StringBuilder productString = new StringBuilder();
-            productString.append(getProductString(product, "category"));
-            productString.append(getProductString(product, "name"));
-            productString.append(getProductString(product, "quantity"));
-            productString.append(getProductString(product, "price"));
+            productString.append(getProductString(productObject, "category"));
+            productString.append(getProductString(productObject, "name"));
+            productString.append(getProductString(productObject, "quantity"));
+            productString.append(getProductString(productObject, "price"));
             productString = removeSemicolon(productString);
-            if(productProperties.length() != 0) {
-                productProperties.append(",");
+            if(product.length() != 0) {
+                product.append(",");
             }
-            productProperties.append(productString);
+            product.append(productString);
         }
-        if(productProperties.length() != 0){
-            return productProperties.toString();
-        }
-        return null;
+        return product.toString();
     }
 
-    // Look for stringbuilder alternatives
+    // Remove all the last occurrence of semicolon from the productString
     private StringBuilder removeSemicolon(StringBuilder productString) {
-        if(productString.length() != 0) {
-            int lastIndex = productString.length()-1;
-            for (int i = productString.length()-1; i >= 0; i--){
-                if(productString.charAt(i) == ';')
-                    continue;
-                lastIndex = i;
-                break;
-            }
-            return new StringBuilder(productString.substring(0,lastIndex+1));
-        }
-        return (productString);
+        int index = productString.lastIndexOf(";");
+        return productString.delete(index, productString.length());
     }
 
     private StringBuilder getProductString(JSONObject product, String productParameter) throws JSONException {
