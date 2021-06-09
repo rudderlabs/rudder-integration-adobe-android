@@ -1,6 +1,7 @@
 package com.rudderstack.android.integrations.adobe;
 
 
+import android.content.Context;
 import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
@@ -39,6 +40,13 @@ import java.util.Map;
 public class AdobeIntegrationFactory extends RudderIntegration<Void> {
     private static final String ADOBE_KEY = "Adobe Analytics";
     private AdobeDestinationConfig destinationConfig;
+
+    private RudderLogger logger;
+//    private AdobeAnalyticsClient adobeAnalytics;
+    private VideoAnalytics video;
+//    private EcommerceAnalytics ecommerce;
+//    private Map<String, String> eventsMapping;
+//    private ContextDataConfiguration contextDataConfiguration;
 
     private static final Map<String, Object> eventsMapping = new HashMap<String, Object>(){
         {
@@ -79,14 +87,21 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
                             JsonDeserializationContext context
                     ) throws JsonParseException {
                         JsonObject jsonObject = json.getAsJsonObject();
+
                         JsonArray contextDataMaps = (JsonArray) (jsonObject.get("contextDataMapping"));
                         Map<String, Object> contextDataMap = Utils.getContextMap(contextDataMaps);
+
                         JsonArray rudderEventsToAdobeEventsMaps = (JsonArray) (jsonObject.get("rudderEventsToAdobeEvents"));
                         Map<String, Object> rudderEventsToAdobeEventsMap = Utils.getEventsMap(rudderEventsToAdobeEventsMaps);
+
+                        JsonArray videoEventsMaps = (JsonArray) (jsonObject.get("eventsToTypes"));
+                        Map<String, Object> videoEventsMap = Utils.getVideoEventsMap(videoEventsMaps);
                         return new AdobeDestinationConfig(
                                 jsonObject.get("heartbeatTrackingServerUrl").getAsString(),
                                 contextDataMap,
-                                rudderEventsToAdobeEventsMap
+                                rudderEventsToAdobeEventsMap,
+                                videoEventsMap,
+                                jsonObject.get("sslHeartbeat").getAsBoolean()
                         );
                     }
                 };
@@ -95,12 +110,21 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
         Gson customGson = gsonBuilder.create();
         this.destinationConfig = customGson.fromJson(customGson.toJson(config), AdobeDestinationConfig.class);
 
+        video = new VideoAnalytics(
+                RudderClient.getApplication(),
+                destinationConfig.heartbeatTrackingServerUrl,
+                destinationConfig.contextData,
+                destinationConfig.ssl,
+                rudderConfig.getLogLevel()
+        );
+
         // Adobe Analytics Initialization
         Config.setContext(RudderClient.getApplication());
 
         //Debugger of Adobe Analytics
         if (rudderConfig.getLogLevel() == RudderLogger.RudderLogLevel.VERBOSE) {
             Config.setDebugLogging(true);
+            video.setDebugLogging(true);
         }
     }
 
@@ -122,8 +146,17 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
                         return;
 
                     Map<String, Object> mappedEvents = destinationConfig.rudderEventsToAdobeEvents;
+                    Map<String, Object> eventProperties = element.getProperties();
 
-                    // If it E-Commerce event
+                    // If it is Video Analytics event
+                    // ??.toLowerCase() will be used or not with eventName ??
+                    if (isVideoEvent(eventName)) {
+                        video.track(getVideoEvent(eventName),element);
+                        return;
+                    }
+
+                    // If it is E-Commerce event
+
                     if(eventsMapping.containsKey(eventName.toLowerCase())) {
                         // To check, if either mappedEvents is either null or empty, or,
                         // mappedEvents contain the eventName mapped at Rudderstack dashboard or not.
@@ -133,7 +166,7 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
                             return;
                         }
                         try {
-                            handleEcommerce(eventsMapping.get(eventName.toLowerCase()), element.getProperties());
+                            handleEcommerce(eventsMapping.get(eventName.toLowerCase()), eventProperties);
                         } catch (JSONException e) {
                             RudderLogger.logVerbose("JSONException occurred. Aborting track call.");
                         }
@@ -147,7 +180,7 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
                     }
 
                     // Custom Track call
-                    Analytics.trackAction((String) mappedEvents.get(eventName), element.getProperties());
+                    Analytics.trackAction((String) mappedEvents.get(eventName), eventProperties);
                     break;
 
                 case MessageType.SCREEN:
@@ -158,7 +191,7 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
                     if(isEmpty(element.getProperties())){
                         return;
                     }
-                    Map<String, Object> eventProperties = element.getProperties();
+                    eventProperties = element.getProperties();
                     Map<String, Object> contextDataScreen = new HashMap<>();
                     for (Map.Entry<String, Object> entry : eventProperties.entrySet()) {
                         contextDataScreen.put(entry.getKey(), entry.getValue());
@@ -171,6 +204,15 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
                     break;
             }
         }
+    }
+
+    private String getVideoEvent(String eventName) {
+        return (String) destinationConfig.videoEvents.get(eventName);
+    }
+
+
+    private boolean isVideoEvent(String eventName) {
+        return destinationConfig.rudderEventsToAdobeEvents.containsKey(eventName);
     }
 
     @Override
@@ -214,10 +256,10 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
 
         // Handling the custom mapped properties
         if(!isEmpty(destinationConfig.contextData) && !isEmpty(eventProperties)) {
-            for(Map.Entry<String, Object> contextDataVaribale : destinationConfig.contextData.entrySet() ) {
-                if(eventProperties.containsKey(contextDataVaribale.getKey())){
-                    contextData.put((String) contextDataVaribale.getValue(), eventProperties.get(contextDataVaribale.getKey()));
-                    eventProperties.remove(contextDataVaribale.getKey());
+            for(Map.Entry<String, Object> contextDataVariables : destinationConfig.contextData.entrySet() ) {
+                if(eventProperties.containsKey(contextDataVariables.getKey())){
+                    contextData.put((String) contextDataVariables.getValue(), eventProperties.get(contextDataVariables.getKey()));
+                    eventProperties.remove(contextDataVariables.getKey());
                 }
             }
         }

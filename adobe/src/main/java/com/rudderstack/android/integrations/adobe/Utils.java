@@ -33,4 +33,18 @@ public class Utils {
         }
         return eventMap;
     }
+
+    public static Map<String, Object> getVideoEventsMap(JsonArray videoEventsMap) {
+        Map<String, Object> videoEventMap = new HashMap<>();
+        for (int i = 0; i < videoEventsMap.size(); i++) {
+            JsonObject eventObject = (JsonObject) videoEventsMap.get(i);
+            String eventName = eventObject.get("from").getAsString();
+            String value = eventObject.get("to").getAsString();
+            if(value.equals("initHeartbeat") || value.equals("heartbeatUpdatePlayhead")){
+                continue;
+            }
+            videoEventMap.put(eventName,value);
+        }
+        return videoEventMap;
+    }
 }
