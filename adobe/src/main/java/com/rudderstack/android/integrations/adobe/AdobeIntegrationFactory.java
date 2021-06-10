@@ -1,7 +1,6 @@
 package com.rudderstack.android.integrations.adobe;
 
 
-import android.content.Context;
 import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
@@ -97,11 +96,12 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
                         JsonArray videoEventsMaps = (JsonArray) (jsonObject.get("eventsToTypes"));
                         Map<String, Object> videoEventsMap = Utils.getVideoEventsMap(videoEventsMaps);
                         return new AdobeDestinationConfig(
-                                jsonObject.get("heartbeatTrackingServerUrl").getAsString(),
+                                Utils.getString(jsonObject,"heartbeatTrackingServerUrl"),
                                 contextDataMap,
                                 rudderEventsToAdobeEventsMap,
                                 videoEventsMap,
-                                jsonObject.get("sslHeartbeat").getAsBoolean()
+                                jsonObject.get("sslHeartbeat").getAsBoolean(),
+                                Utils.getString(jsonObject, "customDataPrefix")
                         );
                     }
                 };
@@ -115,6 +115,7 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
                 destinationConfig.heartbeatTrackingServerUrl,
                 destinationConfig.contextData,
                 destinationConfig.ssl,
+                destinationConfig.customDataPrefix,
                 rudderConfig.getLogLevel()
         );
 
@@ -212,7 +213,7 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
 
 
     private boolean isVideoEvent(String eventName) {
-        return destinationConfig.rudderEventsToAdobeEvents.containsKey(eventName);
+        return destinationConfig.videoEvents.containsKey(eventName);
     }
 
     @Override

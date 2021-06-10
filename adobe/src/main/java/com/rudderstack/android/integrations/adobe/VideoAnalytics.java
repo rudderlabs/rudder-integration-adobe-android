@@ -7,14 +7,14 @@ import com.adobe.primetime.va.simple.MediaHeartbeatConfig;
 import com.adobe.primetime.va.simple.MediaObject;
 import com.rudderstack.android.sdk.core.RudderLogger;
 import com.rudderstack.android.sdk.core.RudderMessage;
-import com.rudderstack.android.sdk.core.RudderProperty;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public class VideoAnalytics {
-    String heartbeatTrackingServerUrl;
-    Map<String, Object> contextDatam;
+    private String heartbeatTrackingServerUrl;
+    private String prefix;
+    private Map<String, Object> contextData;
     boolean ssl;
     int logLevel;
     boolean debug = false;
@@ -23,6 +23,7 @@ public class VideoAnalytics {
     private PlaybackDelegate playback;
     private MediaHeartbeat heartbeat;
     private HeartbeatFactory heartbeatFactory;
+
 
     private static final Map<String, String> VIDEO_METADATA_KEYS = new HashMap<>();
     private static final Map<String, String> AD_METADATA_KEYS = new HashMap<>();
@@ -54,18 +55,31 @@ public class VideoAnalytics {
         }
     }
 
+    VideoAnalytics(
+            Context context,
+            String serverUrl,
+            Map<String, Object> contextData,
+            boolean ssl,
+            String prefix,
+            int logger) {
+        this(context, serverUrl, contextData, ssl, new HeartbeatFactory(), prefix, logger);
+    }
     public VideoAnalytics(
             Context context,
             String heartbeatTrackingServerUrl,
             Map<String, Object> contextData,
             boolean ssl,
+            HeartbeatFactory heartbeatFactory,
+            String prefix,
             int logLevel
     ) {
         this.heartbeatTrackingServerUrl = heartbeatTrackingServerUrl;
-        this.contextDatam = contextData;
+        this.contextData = contextData;
         this.ssl = ssl;
         this.logLevel = logLevel;
         packageName = context.getPackageName();
+        this.heartbeatFactory = heartbeatFactory;
+        this.prefix = prefix;
 
         sessionStarted = false;
         debug = false;
@@ -82,13 +96,13 @@ public class VideoAnalytics {
 
     public void track(String eventName, RudderMessage element) {
 
-        if (heartbeatTrackingServerUrl == null) {
+        if (heartbeatTrackingServerUrl == null || heartbeatTrackingServerUrl.length() == 0) {
             RudderLogger.logVerbose("Please enter a Heartbeat Tracking Server URL in your Segment UI "
                             + "Settings in order to send video events to Adobe Analytics");
             return;
         }
 
-        if (eventName != "heartbeatPlaybackStarted" && !sessionStarted) {
+        if (!eventName.equals("heartbeatPlaybackStarted") && !sessionStarted) {
             RudderLogger.logVerbose("Video session has not started yet.");
             return;
         }
@@ -205,12 +219,12 @@ public class VideoAnalytics {
         config.ovp = "unknown";
 
         playback = new PlaybackDelegate();
-//        heartbeat = heartbeatFactory.get(playback, config);
+        heartbeat = heartbeatFactory.get(playback, config);
         sessionStarted = true;
 
         VideoEvent event = new VideoEvent(element);
 
-//        heartbeat.trackSessionStart(event.getMediaObject(), event.getContextData());
+        heartbeat.trackSessionStart(event.getMediaObject(), event.getContextData());
         RudderLogger.logVerbose("heartbeat.trackSessionStart(MediaObject);");
 
 
@@ -220,7 +234,7 @@ public class VideoAnalytics {
     class VideoEvent {
         private Map<String, String> metadata;
         private Map<String, Object> properties;
-        private RudderMessage payload;
+        private RudderMessage element;
 
         /**
          * Creates video properties from the ones provided in the event.
@@ -238,7 +252,7 @@ public class VideoAnalytics {
          * @param isAd Determines if the video is an ad.
          */
         VideoEvent(RudderMessage element, boolean isAd) {
-            this.payload = element;
+            this.element = element;
             metadata = new HashMap<>();
             properties = new HashMap<>();
             if (element.getProperties() != null) {
@@ -265,7 +279,7 @@ public class VideoAnalytics {
 
             if (properties.containsKey("livestream")) {
                 String format = MediaHeartbeat.StreamType.LIVE;
-                if (!getBoolean("livestream", false)) {
+                if (!Utils.getBoolean("livestream", false)) {
                     format = MediaHeartbeat.StreamType.VOD;
                 }
 
@@ -285,7 +299,8 @@ public class VideoAnalytics {
             }
         }
 
-        /*
+
+
         Map<String, String> getContextData() {
 
             Map<String, Object> extraProperties = new HashMap<>();
@@ -321,16 +336,16 @@ public class VideoAnalytics {
 
             Map<String, String> cdata = new HashMap<>();
 
-            for (String field : contextDataConfiguration.getEventFieldNames()) {
+            for (String field : contextData.keySet()) {
                 Object value = null;
                 try {
-                    value = contextDataConfiguration.searchValue(field, payload);
+                    value = Utils.searchValue(field, element);
                 } catch (IllegalArgumentException e) {
                     // Ignore.
                 }
 
                 if (value != null) {
-                    String variable = contextDataConfiguration.getVariableName(field);
+                    String variable = (String) contextData.get(field);
                     cdata.put(variable, String.valueOf(value));
                     extraProperties.remove(field);
                 }
@@ -338,13 +353,14 @@ public class VideoAnalytics {
 
             // Add extra properties.
             for (String extraProperty : extraProperties.keySet()) {
-                String variable = contextDataConfiguration.getPrefix() + extraProperty;
-                cdata.put(variable, extraProperties.getString(extraProperty));
+                String variable = prefix + extraProperty;
+                cdata.put(variable, Utils.getString(extraProperties.get(extraProperty)));
             }
 
             return cdata;
         }
 
+        /*
         MediaObject getChapterObject() {
             if (!payload.containsKey("properties")) {
                 return null;
@@ -372,25 +388,26 @@ public class VideoAnalytics {
             media.setValue(MediaHeartbeat.MediaObjectKey.StandardVideoMetadata, metadata);
             return media;
         }
+        //*/
 
         MediaObject getMediaObject() {
-            if (!payload.containsKey("properties")) {
+            if (element.getProperties().isEmpty()) {
                 return null;
             }
 
-            ValueMap eventProperties = payload.getValueMap("properties");
+            Map<String, Object> eventProperties = element.getProperties();
 
-            String title = eventProperties.getString("title");
-            String contentAssetId = eventProperties.getString("contentAssetId");
+            String title = Utils.getString(eventProperties.get("title"));
+            String contentAssetId = Utils.getString(eventProperties.get("contentAssetId"));//eventProperties.getString("contentAssetId");
             if (contentAssetId == null || contentAssetId.trim().isEmpty()) {
-                contentAssetId = eventProperties.getString("content_asset_id");
+                contentAssetId = Utils.getString(eventProperties.get("content_asset_id"));//eventProperties.getString("content_asset_id");
             }
-            double totalLength = eventProperties.getDouble("totalLength", 0);
+            double totalLength = Utils.getDouble(eventProperties.get("totalLength"), 0);
             if (totalLength == 0) {
-                totalLength = eventProperties.getDouble("total_length", 0);
+                totalLength = Utils.getDouble(eventProperties.get("total_length"), 0);//eventProperties.getDouble("total_length", 0);
             }
             String format = MediaHeartbeat.StreamType.LIVE;
-            if (!eventProperties.getBoolean("livestream", false)) {
+            if (!Utils.getBoolean(eventProperties.get("livestream"), false)) {
                 format = MediaHeartbeat.StreamType.VOD;
             }
 
@@ -399,6 +416,8 @@ public class VideoAnalytics {
             media.setValue(MediaHeartbeat.MediaObjectKey.StandardVideoMetadata, metadata);
             return media;
         }
+
+        /*
 
         MediaObject getAdObject() {
             if (!payload.containsKey("properties")) {
@@ -462,14 +481,6 @@ public class VideoAnalytics {
         }
         //*/
 
-        public boolean getBoolean(String key, boolean defaultValue) {
-            Object value = (key);
-            if (value instanceof Boolean) {
-                return (boolean) value;
-            } else if (value instanceof String) {
-                return Boolean.valueOf((String) value);
-            }
-            return defaultValue;
-        }
+
     }
 }

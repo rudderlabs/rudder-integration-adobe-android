@@ -15,13 +15,34 @@ class MainActivity : AppCompatActivity() {
 
         MainApplication.rudderClient.identify("Testing4");
 
-//        Standard Events
-        val answer1 = JSONObject("""{"name":"test name", "age":25}""")
-        val map= mapOf("product_id" to "pro1", "name" to "monopoly", "price" to 1000)
-        val map1= mapOf("product_id" to "pro2", "name" to "games", "price" to 2000)
-        val list= listOf(map, map1);
+        MainApplication.rudderClient.track("Playback Started",
+            RudderProperty()
+                .putValue("session_id", "12345")
+                .putValue("content_asset_id", "0129370")
+                .putValue("content_pod_ids", "segA")
+                .putValue("ad_asset_id", "ad123")
+                .putValue( "ad_pod_id", "adSegA")
+                .putValue("ad_type", "mid-roll")
+                .putValue("position", 0)
+                .putValue("total_length", 392)
+                .putValue("bitrate", 100)
+                .putValue("framerate", 29.0)
+                .putValue("channel", "Channel name")
+                .putValue("videoPlayer", "youtube")
+                .putValue("sound", 8)
+                .putValue("full_screen", false)
+                .putValue("ad_enabled", true)
+                .putValue("quality", "hd1080")
+                .putValue("livestream", false)
+        )
 
-        MainApplication.rudderClient.track("Event Name");
+//        Standard Events
+//        val answer1 = JSONObject("""{"name":"test name", "age":25}""")
+//        val map= mapOf("product_id" to "pro1", "name" to "monopoly", "price" to 1000)
+//        val map1= mapOf("product_id" to "pro2", "name" to "games", "price" to 2000)
+//        val list= listOf(map, map1);
+//
+//        MainApplication.rudderClient.track("Event Name");
 
 
 //        MainApplication.rudderClient.track("Order Completed",
