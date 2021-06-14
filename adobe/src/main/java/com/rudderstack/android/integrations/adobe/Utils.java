@@ -66,8 +66,12 @@ public class Utils {
         return videoEventMap;
     }
 
-    private static boolean isEmpty(JsonArray value) {
+    public static boolean isEmpty(JsonArray value) {
         return (value == null || value.size() == 0);
+    }
+
+    public static boolean isEmpty(Map<String, Object> val){
+        return (val == null || val.size() == 0);
     }
 
     public static boolean getBoolean(Object value, boolean defaultValue) {

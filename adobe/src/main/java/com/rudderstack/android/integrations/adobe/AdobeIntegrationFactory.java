@@ -159,7 +159,7 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
                     if(eventsMapping.containsKey(eventName.toLowerCase())) {
                         // To check, if either mappedEvents is either null or empty, or,
                         // mappedEvents contain the eventName mapped at Rudderstack dashboard or not.
-                        if(isEmpty(mappedEvents) || !mappedEvents.containsKey(eventName)) {
+                        if(Utils.isEmpty(mappedEvents) || !mappedEvents.containsKey(eventName)) {
                             RudderLogger.logVerbose("Event must be either configured in Adobe and in the Rudderstack setting, "
                                     + "or it must be a reserved Adobe Ecommerce or Video event.");
                             return;
@@ -172,7 +172,7 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
                         return;
                     }
 
-                    if(isEmpty(mappedEvents) || !mappedEvents.containsKey(eventName)) {
+                    if(Utils.isEmpty(mappedEvents) || !mappedEvents.containsKey(eventName)) {
                         RudderLogger.logVerbose("Event must be either configured in Adobe and in the Rudderstack setting, "
                                 + "or it must be a reserved Adobe Ecommerce or Video event.");
                         return;
@@ -187,7 +187,7 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
                     if(screenName == null) {
                         return;
                     }
-                    if(isEmpty(element.getProperties())){
+                    if(Utils.isEmpty(element.getProperties())){
                         return;
                     }
                     eventProperties = element.getProperties();
@@ -235,7 +235,7 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
         Map<String, Object> contextData = new HashMap<>();
         contextData.put("&&events", eventName);
 
-        if (!isEmpty(eventProperties) && eventProperties.containsKey("products")) {
+        if (!Utils.isEmpty(eventProperties) && eventProperties.containsKey("products")) {
             String products = getProducts(getJSONArray(eventProperties.get("products")));
             if (products.length() != 0) {
                 contextData.put("&&products", products);
@@ -243,18 +243,18 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
             eventProperties.remove("products");
         }
 
-        if (!isEmpty(eventProperties) && eventProperties.containsKey("order_id")) {
+        if (!Utils.isEmpty(eventProperties) && eventProperties.containsKey("order_id")) {
             contextData.put("purchaseid", eventProperties.get("order_id"));
             eventProperties.remove("order_id");
         }
 
-        if (!isEmpty(eventProperties) && eventProperties.containsKey("orderId")) {
+        if (!Utils.isEmpty(eventProperties) && eventProperties.containsKey("orderId")) {
             contextData.put("purchaseid", eventProperties.get("orderId"));
             eventProperties.remove("orderId");
         }
 
         // Handling the custom mapped properties
-        if(!isEmpty(destinationConfig.contextData) && !isEmpty(eventProperties)) {
+        if(!Utils.isEmpty(destinationConfig.contextData) && !Utils.isEmpty(eventProperties)) {
             for(Map.Entry<String, Object> contextDataVariables : destinationConfig.contextData.entrySet() ) {
                 if(eventProperties.containsKey(contextDataVariables.getKey())){
                     contextData.put((String) contextDataVariables.getValue(), eventProperties.get(contextDataVariables.getKey()));
@@ -265,7 +265,7 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
 
         // Add all eventProperties which are left
         // And add prefix to the eventName
-        if(!isEmpty(eventProperties)){
+        if(!Utils.isEmpty(eventProperties)){
             for (String extraProperty : eventProperties.keySet()) {
                 String variable = destinationConfig.customDataPrefix + extraProperty;
                 contextData.put(variable, Utils.getString(eventProperties.get(extraProperty)));
@@ -275,10 +275,6 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
 
         // Track Call for E-Commerce event
         Analytics.trackAction((String) eventName, contextData);
-    }
-
-    private boolean isEmpty(Map<String, Object> val){
-        return (val == null && val.size() == 0);
     }
 
     @NonNull

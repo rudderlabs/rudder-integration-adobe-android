@@ -221,7 +221,7 @@ public class VideoAnalytics {
 
         VideoEvent event = new VideoEvent(element);
 
-//        heartbeat.trackSessionStart(event.getMediaObject(), event.getContextData());
+        heartbeat.trackSessionStart(event.getMediaObject(), event.getContextData());
         RudderLogger.logVerbose("heartbeat.trackSessionStart(MediaObject);");
 
     }
@@ -431,25 +431,29 @@ public class VideoAnalytics {
 
             Map<String, String> cdata = new HashMap<>();
 
-            for (String field : contextData.keySet()) {
-                Object value = null;
-                try {
-                    value = Utils.searchValue(field, element);
-                } catch (IllegalArgumentException e) {
-                    // Ignore.
-                }
+            if(!Utils.isEmpty(contextData)) {
+                for (String field : contextData.keySet()) {
+                    Object value = null;
+                    try {
+                        value = Utils.searchValue(field, element);
+                    } catch (IllegalArgumentException e) {
+                        // Ignore.
+                    }
 
-                if (value != null) {
-                    String variable = (String) contextData.get(field);
-                    cdata.put(variable, String.valueOf(value));
-                    extraProperties.remove(field);
+                    if (value != null) {
+                        String variable = (String) contextData.get(field);
+                        cdata.put(variable, String.valueOf(value));
+                        extraProperties.remove(field);
+                    }
                 }
             }
 
             // Add extra properties.
-            for (String extraProperty : extraProperties.keySet()) {
-                String variable = prefix + extraProperty;
-                cdata.put(variable, Utils.getString(extraProperties.get(extraProperty)));
+            if(!Utils.isEmpty(extraProperties)) {
+                for (String extraProperty : extraProperties.keySet()) {
+                    String variable = prefix + extraProperty;
+                    cdata.put(variable, Utils.getString(extraProperties.get(extraProperty)));
+                }
             }
 
             return cdata;
@@ -480,7 +484,6 @@ public class VideoAnalytics {
             MediaObject media =
                     MediaHeartbeat.createChapterObject(title, indexPosition, totalLength, startTime);
             media.setValue(MediaHeartbeat.MediaObjectKey.StandardMediaMetadata, metadata);
-            media.setValue("quality", "hd1080");
             return media;
         }
 
@@ -560,21 +563,5 @@ public class VideoAnalytics {
 
             return media;
         }
-
-        Map<String, String> getMetadata() {
-            return metadata;
-        }
-
-        Map<String, Object> getProperties() {
-            return properties;
-        }
-
-        /*
-        Map<String, Object> getEventPayload() {
-            return payload;
-        }
-        //*/
-
-
     }
 }

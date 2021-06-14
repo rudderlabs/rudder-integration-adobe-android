@@ -18,8 +18,10 @@ class MainActivity : AppCompatActivity() {
 
         MainApplication.rudderClient.identify("Video User");
 
+        videoEvents()
+
 //        trackVideoPlaybackStarted()
-//        trackVideoPlaybackPaused()
+//        trackVideoPlaybackPaused()                // [ADBReportFactory]: Creating report for item: pause
 //        trackVideoPlaybackResumed()
 //        trackVideoContentStarted()
 //        trackVideoContentComplete()
@@ -244,7 +246,11 @@ class MainActivity : AppCompatActivity() {
 
     }
 
-    private fun trackVideoPlaybackStarted() {
+    private fun trackVideoPlaybackStarted(){
+
+    }
+
+    private fun trackVideoPlaybackStarted1() {
         MainApplication.rudderClient.track("Playback Started",
             RudderProperty()
                 .putValue("assetId", "12345")
@@ -274,6 +280,125 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
+    private fun videoEvents() {
+
+        /*
+        // Case 1
+        trackVideoPlaybackStarted1()
+        MainApplication.rudderClient.track("Playback Resumed");
+        Thread.sleep(100000)
+        MainApplication.rudderClient.track("Playback Completed")
+        */
+
+        /*
+        // Case 2: playback with pre-roll ads
+        trackVideoPlaybackStarted1()
+        Thread.sleep(5000)
+        //Pre-Roll
+        trackVideoAdBreakStarted()
+        trackVideoAdStarted()
+        trackVideoPlaybackResumed()
+        Thread.sleep(30000)
+        trackVideoAdCompleted()
+        trackVideoAdBreakCompleted()
+        Thread.sleep(20000)
+        //Mid-roll
+        //trackVideoAdBreakStarted():
+        MainApplication.rudderClient.track("Ad Break Started",
+            RudderProperty()
+                .putValue("title", "Car Commercial2") // Should this be pre-roll, mid-roll or post-roll instead?
+                .putValue("startTime", 30.0)
+                .putValue("indexPosition", 2L)
+                .putValue("contextValue", "value")
+        )
+        trackVideoPlaybackStarted()
+        MainApplication.rudderClient.track("Ad Start",
+            RudderProperty()
+                .putValue("title", "Car Commercial2")
+                .putValue("assetId", "123")
+                .putValue("totalLength", 10.0)
+                .putValue("indexPosition", 2L)
+                .putValue("publisher", "Lexus2")
+                .putValue("extra", "extra value")
+        )
+        Thread.sleep(20000)
+        trackVideoAdCompleted()
+        trackVideoAdBreakCompleted()
+        Thread.sleep(40000)
+        //Post-roll
+        MainApplication.rudderClient.track("Ad Break Started",
+            RudderProperty()
+                .putValue("title", "Car Commercial3") // Should this be pre-roll, mid-roll or post-roll instead?
+                .putValue("startTime", 40.0)
+                .putValue("indexPosition", 3L)
+                .putValue("contextValue", "value")
+        )
+        MainApplication.rudderClient.track("Ad Start",
+            RudderProperty()
+                .putValue("title", "Car Commercial2")
+                .putValue("assetId", "123")
+                .putValue("totalLength", 10.0)
+                .putValue("indexPosition", 3L)
+                .putValue("publisher", "Lexus2")
+                .putValue("extra", "extra value")
+        )
+        Thread.sleep(20000)
+        trackVideoAdCompleted()
+        trackVideoAdBreakCompleted()
+        MainApplication.rudderClient.track("Playback Completed")
+        */
+
+        /*
+        // Case 3: playback with skipped ads
+        trackVideoPlaybackStarted1()
+        Thread.sleep(5000)
+        //Pre-Roll
+        trackVideoAdBreakStarted()
+        trackVideoAdStarted()
+        trackVideoPlaybackResumed()
+        Thread.sleep(30000)
+        trackVideoAdSkipped()
+        MainApplication.rudderClient.track("Playback Completed")
+        */
+
+        /*
+        // Case 4: playback with skipped ads
+        trackVideoPlaybackStarted1()
+        trackVideoPlaybackResumed()
+        Thread.sleep(20000)
+        trackVideoContentStarted()
+        Thread.sleep(30000)
+        trackVideoContentComplete()
+        Thread.sleep(60000)
+        MainApplication.rudderClient.track("Playback Completed")
+        */
+
+        /*
+        // Case 5: playback with buffering
+        trackVideoPlaybackStarted1()
+        trackVideoPlaybackResumed()
+        Thread.sleep(15000)
+        trackVideoBufferStarted()
+        Thread.sleep(15000)
+        trackVideoBufferComplete()
+        Thread.sleep(30000)
+        MainApplication.rudderClient.track("Playback Completed")
+         */
+
+        /*
+        // Case 6: seeking in the main content
+        trackVideoPlaybackStarted1()
+        trackVideoPlaybackResumed()
+        Thread.sleep(15000)
+        trackVideoSeekStarted()
+        Thread.sleep(25000)
+        trackVideoSeekComplete()
+        Thread.sleep(30000)
+        MainApplication.rudderClient.track("Playback Completed")
+         */
+
+    }
+
     private fun trackVideoPlaybackPaused() {
         trackVideoPlaybackStarted()
         MainApplication.rudderClient.track("Playback Paused");
@@ -290,20 +415,20 @@ class MainActivity : AppCompatActivity() {
         trackVideoPlaybackStarted()
         MainApplication.rudderClient.track("Content Start",
             RudderProperty()
-                .putValue("title", "You Win or You Die")
-                .putValue("contentAssetId", "123")
-                .putValue("totalLength", 100.0)
-                .putValue("startTime", 10.0)
-                .putValue("indexPosition", 1L)
+                .putValue("title", "You Win or You Die")         //SP
+                .putValue("contentAssetId", "123")         //SP
+                .putValue("totalLength", 100.0)         //SP
+                .putValue("startTime", 10.0)             //SP
+                .putValue("indexPosition", 1L)         //SP
                 .putValue("position", 35)
-                .putValue("season", "1")
-                .putValue("program", "Game of Thrones")
-                .putValue("episode", "7")
-                .putValue("genre", "fantasy")
-                .putValue("channel", "HBO")
-                .putValue("airdate", "2011")
+                .putValue("season", "1")         //SP
+                .putValue("program", "Game of Thrones")         //SP
+                .putValue("episode", "7")         //SP
+                .putValue("genre", "fantasy")         //SP
+                .putValue("channel", "HBO")         //SP
+                .putValue("airdate", "2011")         //SP
                 .putValue("publisher", "HBO")
-                .putValue("rating", "MA")
+                .putValue("rating", "MA")         //SP
         )
     }
 
@@ -378,13 +503,6 @@ class MainActivity : AppCompatActivity() {
                 .putValue("publisher", "Lexus")
                 .putValue("extra", "extra value")
         )
-
-        val mediaAdInfo = MediaHeartbeat.createAdObject(
-            "Car Commercial",
-            "123",
-            1L,
-            10.0
-        )
     }
 
     fun trackVideoAdSkipped() {
@@ -413,10 +531,5 @@ class MainActivity : AppCompatActivity() {
                 .putValue("droppedFrames", 1)
         )
     }
-
-
-
-
-
 
 }
