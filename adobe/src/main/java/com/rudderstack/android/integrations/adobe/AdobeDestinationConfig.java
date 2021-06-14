@@ -17,11 +17,13 @@ public class AdobeDestinationConfig {
              Map<String, Object> videoEvents,
              boolean ssl,
              String customDataPrefix) {
+
         this.contextData = contextData;
         this.heartbeatTrackingServerUrl = heartbeatTrackingServerUrl;
         this.rudderEventsToAdobeEvents = rudderEventsToAdobeEvents;
         this.videoEvents = videoEvents;
         this.ssl = ssl;
+
         // "a." is reserved by Adobe Analytics
         if (customDataPrefix == null || customDataPrefix.equals("a.")) {
             this.customDataPrefix = "";

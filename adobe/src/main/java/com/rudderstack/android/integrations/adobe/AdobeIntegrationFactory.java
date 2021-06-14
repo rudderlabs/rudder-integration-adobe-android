@@ -41,11 +41,7 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
     private AdobeDestinationConfig destinationConfig;
 
     private RudderLogger logger;
-//    private AdobeAnalyticsClient adobeAnalytics;
     private VideoAnalytics video;
-//    private EcommerceAnalytics ecommerce;
-//    private Map<String, String> eventsMapping;
-//    private ContextDataConfiguration contextDataConfiguration;
 
     private static final Map<String, Object> eventsMapping = new HashMap<String, Object>(){
         {
@@ -101,7 +97,7 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
                                 rudderEventsToAdobeEventsMap,
                                 videoEventsMap,
                                 jsonObject.get("sslHeartbeat").getAsBoolean(),
-                                Utils.getString(jsonObject, "customDataPrefix")
+                                Utils.getString(jsonObject, "contextDataPrefix")
                         );
                     }
                 };
@@ -115,12 +111,14 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
                 destinationConfig.heartbeatTrackingServerUrl,
                 destinationConfig.contextData,
                 destinationConfig.ssl,
-                destinationConfig.customDataPrefix,
-                rudderConfig.getLogLevel()
+                destinationConfig.customDataPrefix
         );
 
         // Adobe Analytics Initialization
         Config.setContext(RudderClient.getApplication());
+
+        Config.setDebugLogging(true);
+        video.setDebugLogging(true);
 
         //Debugger of Adobe Analytics
         if (rudderConfig.getLogLevel() == RudderLogger.RudderLogLevel.VERBOSE) {
@@ -265,10 +263,14 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
             }
         }
 
-        // Add eventProperties which are left
+        // Add all eventProperties which are left
+        // And add prefix to the eventName
         if(!isEmpty(eventProperties)){
-            contextData.putAll(eventProperties);
-            eventProperties.clear();
+            for (String extraProperty : eventProperties.keySet()) {
+                String variable = destinationConfig.customDataPrefix + extraProperty;
+                contextData.put(variable, Utils.getString(eventProperties.get(extraProperty)));
+                eventProperties.remove(extraProperty);
+            }
         }
 
         // Track Call for E-Commerce event

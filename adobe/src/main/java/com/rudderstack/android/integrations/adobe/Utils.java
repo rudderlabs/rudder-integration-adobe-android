@@ -3,10 +3,16 @@ package com.rudderstack.android.integrations.adobe;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.google.gson.reflect.TypeToken;
 import com.rudderstack.android.sdk.core.RudderMessage;
+import com.rudderstack.android.sdk.core.RudderTraits;
+import com.rudderstack.android.sdk.core.util.RudderTraitsSerializer;
 
+import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -14,7 +20,10 @@ import java.util.Map;
 public class Utils {
     // returns the eventMap of the given priority from the contextVariables supplied by the destination config
     @NonNull
-    static Map<String, Object> getContextMap(@NonNull JsonArray contextVariables) {
+    public static Map<String, Object> getContextMap(@NonNull JsonArray contextVariables) {
+        if(isEmpty(contextVariables)) {
+            return null;
+        }
         Map<String, Object> eventMap = new HashMap<>();
         for (int i = 0; i < contextVariables.size(); i++) {
             JsonObject eventObject = (JsonObject) contextVariables.get(i);
@@ -26,6 +35,9 @@ public class Utils {
     }
 
     public static Map<String, Object> getEventsMap(JsonArray rudderEventsToAdobeEventsMaps) {
+        if(isEmpty(rudderEventsToAdobeEventsMaps)) {
+            return null;
+        }
         Map<String, Object> eventMap = new HashMap<>();
         for (int i = 0; i < rudderEventsToAdobeEventsMaps.size(); i++) {
             JsonObject eventObject = (JsonObject) rudderEventsToAdobeEventsMaps.get(i);
@@ -37,6 +49,10 @@ public class Utils {
     }
 
     public static Map<String, Object> getVideoEventsMap(JsonArray videoEventsMap) {
+        if(isEmpty(videoEventsMap)) {
+            return null;
+        }
+
         Map<String, Object> videoEventMap = new HashMap<>();
         for (int i = 0; i < videoEventsMap.size(); i++) {
             JsonObject eventObject = (JsonObject) videoEventsMap.get(i);
@@ -48,6 +64,10 @@ public class Utils {
             videoEventMap.put(eventName,value);
         }
         return videoEventMap;
+    }
+
+    private static boolean isEmpty(JsonArray value) {
+        return (value == null || value.size() == 0);
     }
 
     public static boolean getBoolean(Object value, boolean defaultValue) {
@@ -118,54 +138,16 @@ public class Utils {
         // Dot is present at the beginning of the field name
         if (searchPaths[0].equals("")) {
             // Using the root of the payload as starting point
-//            values = eventPayload;
+
+            // Converting to Map type
+            Gson newGson = new Gson();
+            Type type = new TypeToken<Map<String, Object>>(){}.getType();
+            values = newGson.fromJson(newGson.toJson(element), type);
             searchPaths = Arrays.copyOfRange(searchPaths, 1, searchPaths.length);
-//            return searchValue(searchPaths, element);
         }
 
         return searchValue(searchPaths, values);
     }
-
-    /*
-    private static Object searchValue(String[] searchPath, RudderMessage element) {
-        RudderMessage currentValues = element;
-
-        for (int i = 0; i < searchPath.length; i++) {
-            String path = searchPath[i];
-
-            if (path.trim().length() == 0) {
-                throw new IllegalArgumentException("Invalid field name");
-            }
-
-            if(path.equalsIgnoreCase("properties"))
-
-            if (!currentValues.containsKey(path)) {
-                return null;
-            }
-
-            Object value = currentValues.get(path);
-            if (value == null) {
-                return null;
-            }
-
-            if (i == searchPath.length - 1) {
-                return value;
-            }
-
-            if (value instanceof ValueMap) {
-                currentValues = (ValueMap) value;
-            } else if (value instanceof Map) {
-                try {
-                    currentValues = new ValueMap((Map<String, Object>) value);
-                } catch (ClassCastException e) {
-                    return null;
-                }
-            }
-        }
-
-        return null;
-    }
-    //*/
 
     private static Object searchValue(String[] searchPath, Map<String, Object> eventProperty) {
 

@@ -27,7 +27,7 @@ class MainApplication : Application() {
                     .withDataPlaneUrl(DATA_PLANE_URL)
                     .withControlPlaneUrl(CONTROL_PLANE_URL)
                     .withFactory(AdobeIntegrationFactory.FACTORY)
-                    .withLogLevel(RudderLogger.RudderLogLevel.VERBOSE)
+                    //.withLogLevel(RudderLogger.RudderLogLevel.VERBOSE)
                     .withTrackLifecycleEvents(false)
                     .build()
         )

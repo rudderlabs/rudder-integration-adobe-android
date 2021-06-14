@@ -5,20 +5,6 @@ import com.adobe.primetime.va.simple.MediaObject;
 
 import java.util.Map;
 
-/*
-public class PlaybackDelegate implements MediaHeartbeat.MediaHeartbeatDelegate{
-
-    @Override
-    public MediaObject getQoSObject() {
-        return null;
-    }
-
-    @Override
-    public Double getCurrentPlaybackTime() {
-        return null;
-    }
-}//*/
-
 /**
  * PlaybackDelegate implements Adobe's MediaHeartbeatDelegate interface. This implementation allows
  * us to return the position of a video playhead during a video session.
@@ -41,7 +27,7 @@ class PlaybackDelegate implements MediaHeartbeat.MediaHeartbeatDelegate {
 
     /**
      * Quality of service object. This is created and updated upon receipt of a "VideoEvent Quality
-     * Updated" event, which triggers {@link #createAndUpdateQosObject(Properties)}.
+     * Updated" event, which triggers {@link #createAndUpdateQosObject(Map<String, Object>))}.
      */
     private MediaObject qosData;
 
@@ -143,14 +129,6 @@ class PlaybackDelegate implements MediaHeartbeat.MediaHeartbeatDelegate {
         long currentTime = System.currentTimeMillis();
         long delta = (currentTime - this.playheadPositionTime) / 1000;
         return this.playheadPosition + delta;
-    }
-
-    boolean isPaused() {
-        return paused;
-    }
-
-    MediaObject getQosData() {
-        return qosData;
     }
 
 }

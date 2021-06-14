@@ -2,10 +2,11 @@ package com.rudderstack.android.sample.kotlin
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import com.adobe.primetime.va.simple.MediaHeartbeat
+import com.adobe.primetime.va.simple.MediaObject
 import com.rudderlabs.android.sample.kotlin.R
 import com.rudderstack.android.sdk.core.RudderProperty
-import org.json.JSONArray
-import org.json.JSONObject
+import java.util.*
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -13,28 +14,29 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
 
-        MainApplication.rudderClient.identify("Testing4");
+//        MainApplication.rudderClient.identify("Testing4");
 
-        MainApplication.rudderClient.track("Playback Started",
-            RudderProperty()
-                .putValue("session_id", "12345")
-                .putValue("content_asset_id", "0129370")
-                .putValue("content_pod_ids", "segA")
-                .putValue("ad_asset_id", "ad123")
-                .putValue( "ad_pod_id", "adSegA")
-                .putValue("ad_type", "mid-roll")
-                .putValue("position", 0)
-                .putValue("total_length", 392)
-                .putValue("bitrate", 100)
-                .putValue("framerate", 29.0)
-                .putValue("channel", "Channel name")
-                .putValue("videoPlayer", "youtube")
-                .putValue("sound", 8)
-                .putValue("full_screen", false)
-                .putValue("ad_enabled", true)
-                .putValue("quality", "hd1080")
-                .putValue("livestream", false)
-        )
+        MainApplication.rudderClient.identify("Video User");
+
+//        trackVideoPlaybackStarted()
+//        trackVideoPlaybackPaused()
+//        trackVideoPlaybackResumed()
+//        trackVideoContentStarted()
+//        trackVideoContentComplete()
+//        trackVideoPlaybackCompleted()
+//        trackVideoBufferStarted()
+//        trackVideoBufferComplete()
+//        trackVideoSeekStarted()
+//        trackVideoSeekComplete()
+//        trackVideoAdBreakStarted()
+//        trackVideoAdBreakCompleted()
+//        trackVideoAdStarted()
+//        trackVideoAdSkipped()
+//        trackVideoAdCompleted()
+//        trackVideoPlaybackInterrupted()
+//        trackVideoQualityUpdated()
+
+        /*
 
 //        Standard Events
 //        val answer1 = JSONObject("""{"name":"test name", "age":25}""")
@@ -140,6 +142,8 @@ class MainActivity : AppCompatActivity() {
         product1.put("price", 14)
         product1.put("quantity", 1)
         productsArray.put(product1)
+
+
 //        MainApplication.rudderClient.track(
 //                "order completed",
 //                payload
@@ -235,8 +239,184 @@ class MainActivity : AppCompatActivity() {
 //            null
 //        );
 
-
+    */
 
 
     }
+
+    private fun trackVideoPlaybackStarted() {
+        MainApplication.rudderClient.track("Playback Started",
+            RudderProperty()
+                .putValue("assetId", "12345")
+                .putValue("program", "TMKOC")       //show
+                .putValue("season", "Grand Finale season")
+                .putValue("episode", "Last episode")
+                .putValue("genre", "Comedy genre")
+                .putValue("channel", "Channel name")        //NETWORK
+                .putValue("airdate", "airdate")          //?
+                .putValue("publisher", "publisher")     //ORIGINATOR    ?
+                .putValue("rating", "rating")           //?
+                .putValue("title", "The name of the media")     //Content Name
+                .putValue("contentAssetId", "The unique identifier for the media")      //Content
+                .putValue("totalLength", 50)    //Content Length
+                .putValue("livestream", true)   //Content Type (default VOD)
+                //.putValue("position", 0)        //// ContentStarted Event
+                .putValue("total_length", 392)  //Content Length
+                .putValue("videoPlayer", "twitch")     //Content Player Name
+
+                //Custom Properties
+                .putValue("full_screen", false)
+                .putValue("framerate", "twitch2")
+                .putValue("ad_enabled", true)
+                .putValue("quality", "hd1080")
+                .putValue("bitrate", 100)
+                .putValue("sound", 8)
+        )
+    }
+
+    private fun trackVideoPlaybackPaused() {
+        trackVideoPlaybackStarted()
+        MainApplication.rudderClient.track("Playback Paused");
+    }
+
+    private fun trackVideoPlaybackResumed() {
+        trackVideoPlaybackStarted()
+        MainApplication.rudderClient.track("Playback Resumed");
+    }
+
+    fun trackVideoContentStarted() {
+        //heartbeatContentStarted
+
+        trackVideoPlaybackStarted()
+        MainApplication.rudderClient.track("Content Start",
+            RudderProperty()
+                .putValue("title", "You Win or You Die")
+                .putValue("contentAssetId", "123")
+                .putValue("totalLength", 100.0)
+                .putValue("startTime", 10.0)
+                .putValue("indexPosition", 1L)
+                .putValue("position", 35)
+                .putValue("season", "1")
+                .putValue("program", "Game of Thrones")
+                .putValue("episode", "7")
+                .putValue("genre", "fantasy")
+                .putValue("channel", "HBO")
+                .putValue("airdate", "2011")
+                .putValue("publisher", "HBO")
+                .putValue("rating", "MA")
+        )
+    }
+
+    fun trackVideoContentComplete() {
+        trackVideoPlaybackStarted()
+        MainApplication.rudderClient.track("Content Complete")
+    }
+
+    fun trackVideoPlaybackCompleted() {
+        trackVideoPlaybackStarted()
+        MainApplication.rudderClient.track("Playback Completed")
+    }
+
+    fun trackVideoBufferStarted() {
+        trackVideoPlaybackStarted()
+        MainApplication.rudderClient.track("Buffer Started")
+    }
+
+    fun trackVideoBufferComplete() {
+        trackVideoPlaybackStarted()
+        MainApplication.rudderClient.track("Buffer Completed")
+    }
+
+    fun trackVideoSeekStarted() {
+//        trackVideoPlaybackSeekStarted()
+        trackVideoPlaybackStarted()
+        MainApplication.rudderClient.track("Seek Started",
+            RudderProperty()
+                .putValue("seekPosition", null)
+        )
+    }
+
+    fun trackVideoSeekComplete() {
+        trackVideoPlaybackStarted()
+        MainApplication.rudderClient.track("Seek Completed",
+            RudderProperty()
+                .putValue("seekPosition", 50L)
+        )
+    }
+
+    fun trackVideoAdBreakStarted() {
+
+//        val variables: MutableMap<String, String> = HashMap()
+//        variables["contextValue"] = "adobe.context.value"
+//        videoAnalytics.setContextDataConfiguration(ContextDataConfiguration("", variables))
+        trackVideoPlaybackStarted()
+        MainApplication.rudderClient.track("Ad Break Started",
+            RudderProperty()
+                .putValue("title", "Car Commercial") // Should this be pre-roll, mid-roll or post-roll instead?
+                .putValue("startTime", 10.0)
+                .putValue("indexPosition", 1L)
+                .putValue("contextValue", "value")
+        )
+    }
+
+    fun trackVideoAdBreakCompleted() {
+        trackVideoPlaybackStarted()
+        MainApplication.rudderClient.track("Ad Break Completed")
+    }
+
+    fun trackVideoAdStarted() {
+//        val variables: MutableMap<String, String> = HashMap()
+//        variables["title"] = "adobe.title"
+//        videoAnalytics.setContextDataConfiguration(ContextDataConfiguration("myapp.", variables))
+        trackVideoPlaybackStarted()
+        MainApplication.rudderClient.track("Ad Start",
+            RudderProperty()
+                .putValue("title", "Car Commercial")
+                .putValue("assetId", "123")
+                .putValue("totalLength", 10.0)
+                .putValue("indexPosition", 1L)
+                .putValue("publisher", "Lexus")
+                .putValue("extra", "extra value")
+        )
+
+        val mediaAdInfo = MediaHeartbeat.createAdObject(
+            "Car Commercial",
+            "123",
+            1L,
+            10.0
+        )
+    }
+
+    fun trackVideoAdSkipped() {
+        trackVideoPlaybackStarted()
+        MainApplication.rudderClient.track("Ad Skipped")
+    }
+
+    fun trackVideoAdCompleted() {
+        trackVideoPlaybackStarted()
+        MainApplication.rudderClient.track("Ad Skipped")
+    }
+
+    @Throws(Exception::class)
+    fun trackVideoPlaybackInterrupted() {
+        trackVideoPlaybackStarted()
+        MainApplication.rudderClient.track("Playback Interrupted")
+    }
+
+    fun trackVideoQualityUpdated() {
+        trackVideoPlaybackStarted()
+        MainApplication.rudderClient.track("Quality Updated",
+            RudderProperty()
+                .putValue("bitrate", 12000)
+                .putValue("startupTime", 1)
+                .putValue("fps", 50)
+                .putValue("droppedFrames", 1)
+        )
+    }
+
+
+
+
+
+
 }
