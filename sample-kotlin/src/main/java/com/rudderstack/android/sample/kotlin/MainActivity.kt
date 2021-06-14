@@ -18,7 +18,7 @@ class MainActivity : AppCompatActivity() {
 
         MainApplication.rudderClient.identify("Video User");
 
-        videoEvents()
+//        videoEvents()
 
 //        trackVideoPlaybackStarted()
 //        trackVideoPlaybackPaused()                // [ADBReportFactory]: Creating report for item: pause
@@ -243,6 +243,7 @@ class MainActivity : AppCompatActivity() {
 
     */
 
+        MainApplication.rudderClient.screen("screen_call")
 
     }
 
