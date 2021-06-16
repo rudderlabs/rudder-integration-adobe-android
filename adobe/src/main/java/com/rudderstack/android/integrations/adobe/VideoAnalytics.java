@@ -181,6 +181,11 @@ public class VideoAnalytics {
 
         Map<String, Object> eventProperties = element.getProperties();
 
+        if (Utils.isEmpty(eventProperties)) {
+            RudderLogger.logVerbose("Event properties should not be empty for Playback Start Event!");
+            return;
+        }
+
         MediaHeartbeatConfig config = new MediaHeartbeatConfig();
         config.trackingServer = heartbeatTrackingServerUrl;
         config.channel = (String) eventProperties.get("channel");
@@ -483,7 +488,7 @@ public class VideoAnalytics {
 
             MediaObject media =
                     MediaHeartbeat.createChapterObject(title, indexPosition, totalLength, startTime);
-            media.setValue(MediaHeartbeat.MediaObjectKey.StandardMediaMetadata, metadata);
+            media.setValue(MediaHeartbeat.MediaObjectKey.StandardVideoMetadata, metadata);
             return media;
         }
 

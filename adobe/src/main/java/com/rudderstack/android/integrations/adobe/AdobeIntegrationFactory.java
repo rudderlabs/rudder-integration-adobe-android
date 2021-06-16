@@ -117,9 +117,6 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
         // Adobe Analytics Initialization
         Config.setContext(RudderClient.getApplication());
 
-        Config.setDebugLogging(true);
-        video.setDebugLogging(true);
-
         //Debugger of Adobe Analytics
         if (rudderConfig.getLogLevel() == RudderLogger.RudderLogLevel.VERBOSE) {
             Config.setDebugLogging(true);
