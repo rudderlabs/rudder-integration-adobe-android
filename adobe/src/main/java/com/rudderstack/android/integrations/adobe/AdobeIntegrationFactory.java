@@ -97,7 +97,8 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
                                 rudderEventsToAdobeEventsMap,
                                 videoEventsMap,
                                 jsonObject.get("sslHeartbeat").getAsBoolean(),
-                                Utils.getString(jsonObject, "contextDataPrefix")
+                                Utils.getString(jsonObject, "contextDataPrefix"),
+                                Utils.getString(jsonObject, "productIdentifier")
                         );
                     }
                 };
@@ -111,7 +112,7 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
                 destinationConfig.heartbeatTrackingServerUrl,
                 destinationConfig.contextData,
                 destinationConfig.ssl,
-                destinationConfig.customDataPrefix
+                destinationConfig.contextDataPrefix
         );
 
         // Adobe Analytics Initialization
@@ -145,22 +146,23 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
                     Map<String, Object> eventProperties = element.getProperties();
 
                     // If it is Video Analytics event
-                    // ??.toLowerCase() will be used or not with eventName ??
                     if (isVideoEvent(eventName)) {
                         video.track(getVideoEvent(eventName),element);
                         return;
                     }
 
                     // If it is E-Commerce event
-
                     if(eventsMapping.containsKey(eventName.toLowerCase())) {
                         // To check, if either mappedEvents is either null or empty, or,
                         // mappedEvents contain the eventName mapped at Rudderstack dashboard or not.
-                        if(Utils.isEmpty(mappedEvents) || !mappedEvents.containsKey(eventName)) {
-                            RudderLogger.logVerbose("Event must be either configured in Adobe and in the Rudderstack setting, "
-                                    + "or it must be a reserved Adobe Ecommerce or Video event.");
+                        if (destinationConfig.rudderEventsToAdobeEvents != null
+                                && destinationConfig.rudderEventsToAdobeEvents.containsKey(eventName)) {
+                            RudderLogger.logVerbose(
+                                    "Rudderstack currently does not support mapping specced ecommerce events to "
+                                            + "custom Adobe events.");
                             return;
                         }
+
                         try {
                             handleEcommerce(eventsMapping.get(eventName.toLowerCase()), eventProperties);
                         } catch (JSONException e) {
@@ -169,14 +171,17 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
                         return;
                     }
 
-                    if(Utils.isEmpty(mappedEvents) || !mappedEvents.containsKey(eventName)) {
-                        RudderLogger.logVerbose("Event must be either configured in Adobe and in the Rudderstack setting, "
-                                + "or it must be a reserved Adobe Ecommerce or Video event.");
+                    if (destinationConfig.rudderEventsToAdobeEvents == null
+                            || destinationConfig.rudderEventsToAdobeEvents.size() == 0
+                            || !destinationConfig.rudderEventsToAdobeEvents.containsKey(eventName)) {
+                        RudderLogger.logVerbose("Event must be either configured in Adobe and in the Rudderstackt setting, "
+                                        + "or it should be a reserved Adobe Ecommerce or Video event.");
                         return;
                     }
 
                     // Custom Track call
-                    Analytics.trackAction((String) mappedEvents.get(eventName), eventProperties);
+                    Map<String, Object> cdata = getContextData(eventProperties);
+                    Analytics.trackAction((String) mappedEvents.get(eventName), cdata);
                     break;
 
                 case MessageType.SCREEN:
@@ -227,17 +232,68 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
         }
     }
 
+    private Map<String, Object> getContextData(Map<String, Object> eventProperties) {
+
+        // Remove products just in case
+        eventProperties.remove("products");
+
+        Map<String, Object> contextData = new HashMap<>();
+
+        // Handling the custom mapped properties
+        if(!Utils.isEmpty(destinationConfig.contextData) && !Utils.isEmpty(eventProperties)) {
+            for (Map.Entry<String, Object> contextDataVariables : destinationConfig.contextData.entrySet()) {
+                if (eventProperties.containsKey(contextDataVariables.getKey())) {
+                    contextData.put((String) contextDataVariables.getValue(), eventProperties.get(contextDataVariables.getKey()));
+                    eventProperties.remove(contextDataVariables.getKey());
+                }
+            }
+        }
+
+        // Add all eventProperties which are left
+        // And add prefix to the eventName
+        if(!Utils.isEmpty(eventProperties)){
+            for (String extraProperty : eventProperties.keySet()) {
+                String variable = destinationConfig.contextDataPrefix + extraProperty;
+                contextData.put(variable, Utils.getString(eventProperties.get(extraProperty)));
+            }
+            eventProperties.clear();
+        }
+
+        if (contextData.size() == 0) {
+            return null;
+        }
+        return contextData;
+    }
+
     private void handleEcommerce(Object eventName, Map<String, Object> eventProperties) throws JSONException {
 
         Map<String, Object> contextData = new HashMap<>();
         contextData.put("&&events", eventName);
 
+        // If products variable is present
+        String products;
         if (!Utils.isEmpty(eventProperties) && eventProperties.containsKey("products")) {
-            String products = getProducts(getJSONArray(eventProperties.get("products")));
-            if (products.length() != 0) {
-                contextData.put("&&products", products);
-            }
+            products = getProductsString(getJSONArray(eventProperties.get("products")));
             eventProperties.remove("products");
+        }
+        // If product is not present, then look for category, quantity, price and productIdentifier
+        // at the root level i.e., at eventProperties.
+        else {
+            products = getProductsStrings(eventProperties);
+            eventProperties.remove("category");
+            eventProperties.remove("quantity");
+            eventProperties.remove("price");
+            String idKey = destinationConfig.productIdentifier;
+            if (idKey == null || idKey.equals("id")) {
+                eventProperties.remove("productId");
+                eventProperties.remove("product_id");
+            } else {
+                eventProperties.remove(idKey);
+            }
+        }
+
+        if (products != null && products.trim().length() != 0) {
+            contextData.put("&&products", products);
         }
 
         if (!Utils.isEmpty(eventProperties) && eventProperties.containsKey("order_id")) {
@@ -264,10 +320,10 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
         // And add prefix to the eventName
         if(!Utils.isEmpty(eventProperties)){
             for (String extraProperty : eventProperties.keySet()) {
-                String variable = destinationConfig.customDataPrefix + extraProperty;
+                String variable = destinationConfig.contextDataPrefix + extraProperty;
                 contextData.put(variable, Utils.getString(eventProperties.get(extraProperty)));
-                eventProperties.remove(extraProperty);
             }
+            eventProperties.clear();
         }
 
         // Track Call for E-Commerce event
@@ -287,39 +343,108 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
         return new JSONArray((ArrayList) object);
     }
 
-    // If eventProperties contains key of Products
-    private String getProducts(JSONArray products) throws JSONException {
-        StringBuilder product = new StringBuilder();
-
+    private String getProductsString(JSONArray products) throws JSONException {
+        StringBuilder productString = new StringBuilder();
         for(int i = 0; i < products.length(); i++) {
             JSONObject productObject = (JSONObject) products.get(i);
-            StringBuilder productString = new StringBuilder();
-            productString.append(getProductString(productObject, "category"));
-            productString.append(getProductString(productObject, "name"));
-            productString.append(getProductString(productObject, "quantity"));
-            productString.append(getProductString(productObject, "price"));
-            productString = removeSemicolon(productString);
-            if(product.length() != 0) {
-                product.append(",");
+
+            Map<String, Object> product = new HashMap<>();
+            product.putAll(new Gson().fromJson(productObject.toString(), HashMap.class));
+
+            if(productString.length() != 0) {
+                productString.append(",");
             }
-            product.append(productString);
+            productString.append(getProductsStrings(product));
+            productString = removeSemicolon(productString);
         }
-        return product.toString();
+        return productString.toString();
+    }
+
+    // If Category, name, product_id is present at the root.
+    private String getProductsStrings(Map<String, Object> product) {
+        StringBuilder productString = new StringBuilder();
+
+        if(product.containsKey("category")) {
+            String category = Utils.getString(product.get("category"));
+            productString.append(category);
+        }
+        productString.append(";");
+
+        // product_id is necessary else it'll throw an error.
+        productString.append(getProductId(product));
+        productString.append(";");
+
+        // Default to 1.
+        int quantity= 1;
+        if(product.containsKey("quantity")) {
+            String q = Utils.getString(product.get("quantity"));
+            productString.append(Utils.getString(q));
+            if (q != null) {
+                try {
+                    quantity = Integer.parseInt(q);
+                } catch (NumberFormatException e) {
+                    // Default.
+                }
+            }
+        }
+        productString.append(";");
+
+        // Default to 0.
+        Double price = 0.0;
+        if(product.containsKey("price")) {
+            String p = Utils.getString(product.get("price"));
+            if (p != null) {
+                try {
+                    price = Double.parseDouble(p);
+                } catch (NumberFormatException e) {
+                    // Default.
+                }
+            }
+            price = price * quantity;
+            productString.append(Utils.getString(price));
+        }
+        return productString.toString();
+    }
+
+    private String getProductId(Map<String, Object> eventProduct) {
+
+        String id = null;
+        String productIdentifier = destinationConfig.productIdentifier;
+        if (productIdentifier != null) {
+            // When productIdentifier is "id" use the default behavior.
+            if (!productIdentifier.equals("id")) {
+                id = Utils.getString(eventProduct.get(productIdentifier));
+            }
+        }
+
+        // Fallback to "productId" as V2 ecommerce spec
+        if (id == null || id.trim().length() == 0) {
+            id = Utils.getString(eventProduct.get("productId"));
+        }
+
+        // Fallback to "product_id" as V2 ecommerce spec
+        if (id == null || id.trim().length() == 0) {
+            id = Utils.getString(eventProduct.get("product_id"));
+        }
+
+        // Fallback to "id" as V1 ecommerce spec
+        if (id == null || id.trim().length() == 0) {
+            id = Utils.getString(eventProduct.get("id"));
+        }
+
+        if (id == null || id.trim().length() == 0) {
+            throw new IllegalArgumentException("Product id is not defined.");
+        }
+        return id;
     }
 
     // Remove all the last occurrence of semicolon from the productString
     private StringBuilder removeSemicolon(StringBuilder productString) {
-        int index = productString.lastIndexOf(";");
-        return productString.delete(index, productString.length());
-    }
-
-    private StringBuilder getProductString(JSONObject product, String productParameter) throws JSONException {
-        StringBuilder productString = new StringBuilder();
-        if (product.has(productParameter)) {
-            productString.append(product.get(productParameter));
+        for(int i = productString.length() - 1; i >= 0; i-- ){
+            if (productString.charAt(i) != ';'){
+                return productString.delete(i + 1, productString.length());
+            }
         }
-        productString.append(";");
-        return productString;
+        return productString.delete(0, productString.length());
     }
-
 }

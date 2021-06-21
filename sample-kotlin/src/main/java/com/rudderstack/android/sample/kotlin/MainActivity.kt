@@ -6,6 +6,8 @@ import com.adobe.primetime.va.simple.MediaHeartbeat
 import com.adobe.primetime.va.simple.MediaObject
 import com.rudderlabs.android.sample.kotlin.R
 import com.rudderstack.android.sdk.core.RudderProperty
+import org.json.JSONArray
+import org.json.JSONObject
 import java.util.*
 
 class MainActivity : AppCompatActivity() {
@@ -13,8 +15,13 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+//        val answer1 = JSONObject("""{"name":"test name", "age":25}""")
+//        val map= mapOf("product_id" to "pro1", "name" to "monopoly", "price" to 1000)
+//        val map1= mapOf("product_id" to "pro2", "name" to "games", "price" to 2000)
+//        val list= listOf(map, map1);
 
-//        MainApplication.rudderClient.identify("Testing4");
+
+        MainApplication.rudderClient.identify("Testing4");
 
 //        MainApplication.rudderClient.identify("Video User");
 
@@ -40,32 +47,36 @@ class MainActivity : AppCompatActivity() {
 //        trackVideoPlaybackInterrupted()
 //        trackVideoQualityUpdated()
 
-        /*
+
 
 //        Standard Events
-//        val answer1 = JSONObject("""{"name":"test name", "age":25}""")
-//        val map= mapOf("product_id" to "pro1", "name" to "monopoly", "price" to 1000)
-//        val map1= mapOf("product_id" to "pro2", "name" to "games", "price" to 2000)
-//        val list= listOf(map, map1);
+        val answer1 = JSONObject("""{"name":"test name", "age":25}""")
+        val map= mapOf("category" to "Games", "product_id" to "pro1")
+        val map1= mapOf("product_id" to "pro2", "name" to "games", "price" to 2000)
+        val list= listOf(map, map1);
 //
 //        MainApplication.rudderClient.track("Event Name");
 
 
-//        MainApplication.rudderClient.track("Order Completed",
-//                RudderProperty()
-//                        .putValue("order_id", "order123")
-//                        //.putValue("product_id","pro123")
-//                        .putValue("checkout_id", "check123")
-//                        .putValue("name", "test")
-//                        .putValue("custom_1", "string")
-//                        .putValue("custom_2", 1230)
-//                        .putValue("custom_3", true)
-//                        .putValue("custom_4", answer1)
-//                        .putValue("revenue", 8.99)
-//                        .putValue("quantity", 2)
-//                        .putValue("currency", "USD")
-//                        .putValue("products", list)
-//        )
+        MainApplication.rudderClient.track("Order Completed1",
+                RudderProperty()
+                    .putValue("order_id", "order123")
+                    //.putValue("product_id","pro123")
+                    .putValue("checkout_id", "check123")
+                    .putValue("name", "test")
+                    .putValue("custom_1", "string")
+                    .putValue("custom_2", 1230)
+                    .putValue("custom_3", true)
+                    .putValue("custom_4", answer1)
+                    .putValue("revenue", 8.99)
+                    .putValue("quantity", 2)
+                    .putValue("currency", "USD")
+                    .putValue("product_id","pro1")
+//                    .putValue("name", "monopoly")
+//                    .putValue("price", 1000)
+//                    .putValue("quantity",20)
+                        .putValue("products", list)
+        )
 //
 //
 //        MainApplication.rudderClient.identify(user_id)
@@ -136,16 +147,16 @@ class MainActivity : AppCompatActivity() {
 //                payload
 //                )
 //
-        val payload = RudderProperty()
-        val productsArray = JSONArray()
-        payload.put("products", productsArray)
-        val product1 = JSONObject()
-        product1.put("sku", "G-32")
-        product1.put("productId", 123)
-        product1.put("name", "Monopoly")
-        product1.put("price", 14)
-        product1.put("quantity", 1)
-        productsArray.put(product1)
+//        val payload = RudderProperty()
+//        val productsArray = JSONArray()
+//        payload.put("products", productsArray)
+//        val product1 = JSONObject()
+//        product1.put("sku", "G-32")
+//        product1.put("productId", 123)
+//        product1.put("name", "Monopoly")
+//        product1.put("price", 14)
+//        product1.put("quantity", 1)
+//        productsArray.put(product1)
 
 
 //        MainApplication.rudderClient.track(
@@ -243,7 +254,6 @@ class MainActivity : AppCompatActivity() {
 //            null
 //        );
 
-    */
 
 //        MainApplication.rudderClient.screen("screen_call")
 

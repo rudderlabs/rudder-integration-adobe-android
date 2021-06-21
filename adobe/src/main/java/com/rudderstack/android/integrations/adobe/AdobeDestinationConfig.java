@@ -8,7 +8,8 @@ public class AdobeDestinationConfig {
     final Map<String, Object> rudderEventsToAdobeEvents;
     final Map<String, Object> videoEvents;
     final boolean ssl;
-    final String customDataPrefix;
+    final String contextDataPrefix;
+    final String productIdentifier;
 
     public AdobeDestinationConfig
             (String heartbeatTrackingServerUrl,
@@ -16,20 +17,22 @@ public class AdobeDestinationConfig {
              Map<String, Object> rudderEventsToAdobeEvents,
              Map<String, Object> videoEvents,
              boolean ssl,
-             String customDataPrefix) {
+             String contextDataPrefix,
+             String productIdentifier) {
 
         this.contextData = contextData;
         this.heartbeatTrackingServerUrl = heartbeatTrackingServerUrl;
         this.rudderEventsToAdobeEvents = rudderEventsToAdobeEvents;
         this.videoEvents = videoEvents;
         this.ssl = ssl;
+        this.productIdentifier = productIdentifier;
 
         // "a." is reserved by Adobe Analytics
-        if (customDataPrefix == null || customDataPrefix.equals("a.")) {
-            this.customDataPrefix = "";
+        if (contextDataPrefix == null || contextDataPrefix.equals("a.")) {
+            this.contextDataPrefix = "";
         }
         else {
-            this.customDataPrefix = customDataPrefix;
+            this.contextDataPrefix = contextDataPrefix;
         }
     }
 }
