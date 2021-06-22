@@ -15,22 +15,12 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-//        val answer1 = JSONObject("""{"name":"test name", "age":25}""")
-//        val map= mapOf("product_id" to "pro1", "name" to "monopoly", "price" to 1000)
-//        val map1= mapOf("product_id" to "pro2", "name" to "games", "price" to 2000)
-//        val list= listOf(map, map1);
+        MainApplication.rudderClient.identify("Testing4")
 
-
-        MainApplication.rudderClient.identify("Testing4");
-
-//        MainApplication.rudderClient.identify("Video User");
-
-        // Call this for Videos
-//        videoEvents()
-
-
+        // Video Events:
+        // trackVideoPlaybackStarted() Video event must be run first before any other Video calls.
 //        trackVideoPlaybackStarted()
-//        trackVideoPlaybackPaused()                // [ADBReportFactory]: Creating report for item: pause
+//        trackVideoPlaybackPaused()
 //        trackVideoPlaybackResumed()
 //        trackVideoContentStarted()
 //        trackVideoContentComplete()
@@ -49,16 +39,14 @@ class MainActivity : AppCompatActivity() {
 
 
 
-//        Standard Events
+//        Standard E-Commerce Events:
+//
         val answer1 = JSONObject("""{"name":"test name", "age":25}""")
-        val map= mapOf("category" to "Games", "product_id" to "pro1")
+        val map= mapOf("product_id" to "pro1", "name" to "monopoly", "price" to 1000)
         val map1= mapOf("product_id" to "pro2", "name" to "games", "price" to 2000)
         val list= listOf(map, map1);
-//
-//        MainApplication.rudderClient.track("Event Name");
 
-
-        MainApplication.rudderClient.track("Order Completed1",
+        MainApplication.rudderClient.track("Order Completed",
                 RudderProperty()
                     .putValue("order_id", "order123")
                     //.putValue("product_id","pro123")
@@ -72,31 +60,12 @@ class MainActivity : AppCompatActivity() {
                     .putValue("quantity", 2)
                     .putValue("currency", "USD")
                     .putValue("product_id","pro1")
+//                   Products specs at the root
 //                    .putValue("name", "monopoly")
 //                    .putValue("price", 1000)
 //                    .putValue("quantity",20)
-                        .putValue("products", list)
+                    .putValue("products", list)
         )
-//
-//
-//        MainApplication.rudderClient.identify(user_id)
-//        MainApplication.rudderClient.track("myapp.ActionName",
-//            RudderProperty()
-//                .putValue("myapp.social.SocialSource", "Facebook")
-//        );
-
-        // Adobe - track when this state loads
-
-        // Adobe - track when this state loads
-//        val exampleContextData = HashMap<String, Any>()
-//        exampleContextData.put("myapp.login.LoginStatus", "logged in");
-        //        exampleContextData.put("myapp.login.LoginStatus", "logged in");
-//        exampleContextData["myapp.social.SocialSource"] = "Twitter"
-//        Analytics.trackState("Home Screen", exampleContextData);
-        //        Analytics.trackState("Home Screen", exampleContextData);
-//        Analytics.trackAction("myapp.ActionName", exampleContextData)
-//
-//
 //
 //        MainApplication.rudderClient.track("Checkout Started",
 //                RudderProperty()
@@ -157,8 +126,7 @@ class MainActivity : AppCompatActivity() {
 //        product1.put("price", 14)
 //        product1.put("quantity", 1)
 //        productsArray.put(product1)
-
-
+//
 //        MainApplication.rudderClient.track(
 //                "order completed",
 //                payload
@@ -172,7 +140,7 @@ class MainActivity : AppCompatActivity() {
 //            "cart viewed",
 //            payload
 //        )
-
+//
 //        MainApplication.rudderClient.track(
 //                "Product Added",
 //                RudderProperty()
@@ -183,38 +151,23 @@ class MainActivity : AppCompatActivity() {
 //                RudderProperty()
 //                        .putValue("currency", "IND"))
 //
-        //Add to wishlist is not present
-//        MainApplication.rudderClient.track("Product Added to Wishlist",
-//                RudderProperty()
-//                        .putValue("name","Gold")
-//                        .putValue("product_id",678))
-//
 //        MainApplication.rudderClient.track("product added",
 //                RudderProperty()
 //                        .putValue("name","Gold")
 //                        .putValue("productId","678")
 //                        .putValue("quantity","678.87"))
 //
-        //Not used
-//        MainApplication.rudderClient.track("product reviewed",
-//                RudderProperty()
-//                        .putValue("rating", 5))
-
-
 //        MainApplication.rudderClient.track("product viewed",
 //            RudderProperty()
 //                .putValue("rating", 5))
 //
-//        MainApplication.rudderClient.track("products searched",
-//                RudderProperty()
-//                        .putValue("query", "www.facebook.com"))
+//        Custom Track Events - (Mapped at Adobe):
 //
-//        Only Standard Event
-//        MainApplication.rudderClient.track("product added")
+//        MainApplication.rudderClient.track("myapp.ActionName",
+//            RudderProperty()
+//                .putValue("myapp.social.SocialSource", "Facebook")
+//        );
 //
-//        Custom Track Events:
-
-
 //        MainApplication.rudderClient.track("Track in MainActivity",
 //                RudderProperty().putValue("val", Date()))
 //        Tracker.sendEvent(Tracker.Event("Sample Kotlin Date")
@@ -222,39 +175,8 @@ class MainActivity : AppCompatActivity() {
 //                .addCustom("value", Date())
 //        )
 //
-//        val array1 = arrayOf(1,2,3,4)
-//        MainApplication.rudderClient.track("Track 6",
-//                RudderProperty().putValue("val",array1))
-//        MainApplication.rudderClient.track("Youtube Opened")
-//
-//        MainApplication.rudderClient.track("Testing Token",
-//                RudderProperty()
-//                        .putValue("Colour","Black")
-//                        .putValue("Weight","25lb"));
-//
-//
 //        Screen Call:
 //
-//        MainApplication.rudderClient.screen("Screen 1",
-//            RudderProperty().putValue("val", Date()))
-//
-//        MainApplication.rudderClient.screen("Sample Screen Name",
-//            RudderProperty()
-//                .putValue("prop_key","prop_value"));
-//
-//
-//        TC:14 Screen call with name
-//        MainApplication.rudderClient.screen("main.Activity");
-//
-//        TC:15 Screen call with name, category and property
-//        MainApplication.rudderClient.screen(
-//            "Myntra_home",
-//            RudderProperty()
-//                    .putValue("Dynamic", "true").putValue("Colour", "Grey"),
-//            null
-//        );
-
-
 //        MainApplication.rudderClient.screen("screen_call")
 
     }
@@ -268,14 +190,14 @@ class MainActivity : AppCompatActivity() {
                 .putValue("episode", "Last episode2")
                 .putValue("genre", "Comedy genre2")
                 .putValue("channel", "Channel name2")        //NETWORK
-                .putValue("airdate", "airdate 15june")          //?
-                .putValue("publisher", "publisher2")     //ORIGINATOR    ?
-                .putValue("rating", "rating5")           //?
+                .putValue("airdate", "airdate 15june")
+                .putValue("publisher", "publisher2")     //ORIGINATOR
+                .putValue("rating", "rating5")
                 .putValue("title", "The name of the media2")     //Content Name
                 .putValue("contentAssetId", "The unique identifier for the media2")      //Content
                 .putValue("totalLength", 150)    //Content Length
                 .putValue("livestream", true)   //Content Type (default VOD)
-                //.putValue("position", 0)        //// ContentStarted Event
+                //.putValue("position", 0)        // ContentStarted Event
                 .putValue("total_length", 392)  //Content Length
                 .putValue("videoPlayer", "twitch")     //Content Player Name
 
@@ -286,12 +208,14 @@ class MainActivity : AppCompatActivity() {
                 .putValue("quality", "hd1080")
                 .putValue("bitrate", 100)
                 .putValue("sound", 8)
+                .putValue("ovp", "apple_tv")
         )
     }
 
+    // Demo video events method - which calls different sets of Video methods in sequence
     private fun videoEvents() {
 
-        // This should be run first before any other calls.
+        // trackVideoPlaybackStarted() method should be run first before any other Video calls.
 //        trackVideoPlaybackStarted()
 
         /*
@@ -304,16 +228,16 @@ class MainActivity : AppCompatActivity() {
         /*
         // Case 2: playback with pre-roll ads
         trackVideoQualityUpdated()
-//        Thread.sleep(5000)
+        Thread.sleep(5000)
         //Pre-Roll
         trackVideoAdBreakStarted()
         trackVideoAdStarted()
         //trackVideoPlaybackResumed()
-//        Thread.sleep(30000)
+        Thread.sleep(30000)
         trackVideoAdCompleted()
         trackVideoAdBreakCompleted()
-//        Thread.sleep(20000)
-//        Mid-roll
+        Thread.sleep(20000)
+        //Mid-roll
         //trackVideoAdBreakStarted():
         MainApplication.rudderClient.track("Ad Break Started",
             RudderProperty()
@@ -332,10 +256,10 @@ class MainActivity : AppCompatActivity() {
                 .putValue("publisher", "Lexus2")
                 .putValue("extra", "extra value")
         )
-//        Thread.sleep(20000)
-        trackVideoAdCompleted()
+        Thread.sleep(20000)
+//        trackVideoAdCompleted()
         trackVideoAdBreakCompleted()
-//        Thread.sleep(40000)
+        Thread.sleep(40000)
         //Post-roll
         MainApplication.rudderClient.track("Ad Break Started",
             RudderProperty()
@@ -425,17 +349,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun trackVideoPlaybackPaused() {
-//        trackVideoPlaybackStarted()
-        MainApplication.rudderClient.track("Playback Paused");
+        MainApplication.rudderClient.track("Playback Paused")
     }
 
     private fun trackVideoPlaybackResumed() {
-//        trackVideoPlaybackStarted()
-        MainApplication.rudderClient.track("Playback Resumed");
+        MainApplication.rudderClient.track("Playback Resumed")
     }
 
     fun trackVideoContentStarted() {
-//        trackVideoPlaybackStarted()
         MainApplication.rudderClient.track("Content Start",
             RudderProperty()
                 .putValue("title", "You Win or You Die2")         //SP
@@ -456,27 +377,22 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun trackVideoContentComplete() {
-//        trackVideoPlaybackStarted()
         MainApplication.rudderClient.track("Content Complete")
     }
 
     fun trackVideoPlaybackCompleted() {
-//        trackVideoPlaybackStarted()
         MainApplication.rudderClient.track("Playback Completed")
     }
 
     fun trackVideoBufferStarted() {
-//        trackVideoPlaybackStarted()
         MainApplication.rudderClient.track("Buffer Started")
     }
 
     fun trackVideoBufferComplete() {
-//        trackVideoPlaybackStarted()
         MainApplication.rudderClient.track("Buffer Completed")
     }
 
     fun trackVideoSeekStarted() {
-//        trackVideoPlaybackStarted()
         MainApplication.rudderClient.track("Seek Started",
             RudderProperty()
                 .putValue("seekPosition", null)
@@ -484,7 +400,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun trackVideoSeekComplete() {
-//        trackVideoPlaybackStarted()
         MainApplication.rudderClient.track("Seek Completed",
             RudderProperty()
                 .putValue("seekPosition", 50L)
@@ -492,23 +407,19 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun trackVideoAdBreakStarted() {
-//        trackVideoPlaybackStarted()
         MainApplication.rudderClient.track("Ad Break Started",
             RudderProperty()
                 .putValue("title", "TV Commercial2") // Should this be pre-roll, mid-roll or post-roll instead?
                 .putValue("startTime", 10.0)
                 .putValue("indexPosition", 2L)
-//                .putValue("contextValue", "ADvalue")      //Custom Value
         )
     }
 
     fun trackVideoAdBreakCompleted() {
-//        trackVideoPlaybackStarted()
         MainApplication.rudderClient.track("Ad Break Completed")
     }
 
     fun trackVideoAdStarted() {
-//        trackVideoPlaybackStarted()
         MainApplication.rudderClient.track("Ad Start",
             RudderProperty()
                 .putValue("title", "TV Commercial")
@@ -521,23 +432,19 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun trackVideoAdSkipped() {
-//        trackVideoPlaybackStarted()
         MainApplication.rudderClient.track("Ad Skipped")
     }
 
     fun trackVideoAdCompleted() {
-//        trackVideoPlaybackStarted()
         MainApplication.rudderClient.track("Ad Completed")
     }
 
     @Throws(Exception::class)
     fun trackVideoPlaybackInterrupted() {
-//        trackVideoPlaybackStarted()
         MainApplication.rudderClient.track("Playback Interrupted")
     }
 
     fun trackVideoQualityUpdated() {
-//        trackVideoPlaybackStarted()
         MainApplication.rudderClient.track("Quality Updated",
             RudderProperty()
                 .putValue("bitrate", 12000)
@@ -546,5 +453,4 @@ class MainActivity : AppCompatActivity() {
                 .putValue("droppedFrames", 1)
         )
     }
-
 }

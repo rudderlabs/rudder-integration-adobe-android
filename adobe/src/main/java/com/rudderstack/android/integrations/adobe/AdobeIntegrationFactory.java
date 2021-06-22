@@ -191,7 +191,6 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
                     if(eventName == null)
                         return;
 
-//                    Map<String, Object> mappedEvents = destinationConfig.rudderEventsToAdobeEvents;
                     Map<String, Object> eventProperties = element.getProperties();
 
                     // If it is Video Analytics event
@@ -207,7 +206,7 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
                         if (destinationConfig.rudderEventsToAdobeEvents != null
                                 && destinationConfig.rudderEventsToAdobeEvents.containsKey(eventName)) {
                             RudderLogger.logVerbose(
-                                    "Rudderstack currently does not support mapping ecommerce events to "
+                                    "Rudderstack currently does not support mapping of ecommerce events to "
                                             + "custom Adobe events.");
                             return;
                         }
@@ -428,7 +427,7 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
         productString.append(";");
 
         // Default to 0.
-        Double price = 0.0;
+        double price = 0.0;
         if(product.containsKey("price")) {
             String p = Utils.getString(product.get("price"));
             if (p != null) {

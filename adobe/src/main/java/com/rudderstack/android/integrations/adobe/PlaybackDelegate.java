@@ -43,21 +43,21 @@ class PlaybackDelegate implements MediaHeartbeat.MediaHeartbeatDelegate {
      *     invocation of this method.
      */
     void createAndUpdateQosObject(Map<String, Object> properties) {
-        double startupTime = Utils.getDouble(properties.get("startupTime"), 0); //.getDouble("startupTime", 0);
+        double startupTime = Utils.getDouble(properties.get("startupTime"), 0);
         if (startupTime == 0) {
-            startupTime = Utils.getDouble(properties.get("startup_time"), 0);//properties.getDouble("startup_time", 0);
+            startupTime = Utils.getDouble(properties.get("startup_time"), 0);
         }
 
-        long droppedFrames = Utils.getLong(properties.get("droppedFrames"), 0);//properties.getLong("droppedFrames", 0);
+        long droppedFrames = Utils.getLong(properties.get("droppedFrames"), 0);
         if (droppedFrames == 0) {
-            droppedFrames = Utils.getLong(properties.get("dropped_frames"), 0);//properties.getLong("dropped_frames", 0);
+            droppedFrames = Utils.getLong(properties.get("dropped_frames"), 0);
         }
 
         qosData =
                 MediaHeartbeat.createQoSObject(
-                        Utils.getLong(properties.get("bitrate"), 0),//properties.getLong("bitrate", 0),
+                        Utils.getLong(properties.get("bitrate"), 0),
                         startupTime,
-                        Utils.getDouble(properties.get("fps"), 0),//properties.getDouble("fps", 0),
+                        Utils.getDouble(properties.get("fps"), 0),
                         droppedFrames);
     }
 
@@ -121,7 +121,7 @@ class PlaybackDelegate implements MediaHeartbeat.MediaHeartbeatDelegate {
      *
      * <p>System.currentTimeMillis retrieves the current time in milliseconds, then we calculate the
      * delta between the current time and the {@link #playheadPositionTime}, which is the system time
-     * at the time a Segment Spec'd VideoEvent event is triggered.
+     * when VideoEvent event is triggered.
      *
      * @return long playheadPosition
      */

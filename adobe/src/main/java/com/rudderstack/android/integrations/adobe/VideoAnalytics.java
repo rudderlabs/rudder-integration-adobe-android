@@ -2,7 +2,6 @@ package com.rudderstack.android.integrations.adobe;
 
 import android.content.Context;
 
-import com.adobe.mobile.Media;
 import com.adobe.primetime.va.simple.MediaHeartbeat;
 import com.adobe.primetime.va.simple.MediaHeartbeatConfig;
 import com.adobe.primetime.va.simple.MediaObject;
@@ -18,7 +17,7 @@ public class VideoAnalytics {
     private String prefix;
     private Map<String, Object> contextData;
     boolean ssl;
-    boolean debug = false;
+    boolean debug;
     private boolean sessionStarted;
     String packageName;
     private PlaybackDelegate playback;
@@ -216,9 +215,14 @@ public class VideoAnalytics {
 //        } else {
 //            config.ovp = "unknown";
 //        }
-        // As of now, implementing config.ovp = "unknown"; (Should be changed later
-        // when RudderOption portion is implemented.
-        config.ovp = "unknown";
+        // Temporary fix, fetching ovp from eventProperties else setting config.ovp = "unknown";
+        // (Should be changed later when RudderOption portion is implemented.
+        if (eventProperties.containsKey("ovp")) {
+            config.ovp = Utils.getString(eventProperties.get("ovp"));
+        }
+        else {
+            config.ovp = "unknown";
+        }
 
         playback = new PlaybackDelegate();
         heartbeat = heartbeatFactory.get(playback, config);
@@ -446,7 +450,7 @@ public class VideoAnalytics {
                     }
 
                     if (value != null) {
-                        String variable = (String) contextData.get(field);
+                        String variable = Utils.getString(contextData.get(field));
                         cdata.put(variable, String.valueOf(value));
                         extraProperties.remove(field);
                     }
@@ -556,7 +560,7 @@ public class VideoAnalytics {
 
             String title = Utils.getString(eventProperties.get("title"));
             long indexPosition =
-                    Utils.getLong(eventProperties.get("indexPosition"), 1); // Segment does not spec this
+                    Utils.getLong(eventProperties.get("indexPosition"), 1);
             if (indexPosition == 1) {
                 indexPosition = Utils.getLong(eventProperties.get("index_position"), 1);
             }

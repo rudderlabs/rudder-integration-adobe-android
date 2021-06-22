@@ -1,16 +1,12 @@
 package com.rudderstack.android.integrations.adobe;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 import com.rudderstack.android.sdk.core.RudderMessage;
-import com.rudderstack.android.sdk.core.RudderTraits;
-import com.rudderstack.android.sdk.core.util.RudderTraitsSerializer;
 
 import java.lang.reflect.Type;
 import java.util.Arrays;
@@ -19,7 +15,6 @@ import java.util.Map;
 
 public class Utils {
     // returns the eventMap of the given priority from the contextVariables supplied by the destination config
-    @NonNull
     public static Map<String, Object> getContextMap(@NonNull JsonArray contextVariables) {
         if(isEmpty(contextVariables)) {
             return null;
@@ -28,7 +23,7 @@ public class Utils {
         for (int i = 0; i < contextVariables.size(); i++) {
             JsonObject eventObject = (JsonObject) contextVariables.get(i);
             String eventName = eventObject.get("from").getAsString();
-            Object value = eventObject.get("to");
+            Object value = eventObject.get("to").getAsString();
             eventMap.put(eventName,value);
         }
         return eventMap;
@@ -58,6 +53,7 @@ public class Utils {
             JsonObject eventObject = (JsonObject) videoEventsMap.get(i);
             String eventName = eventObject.get("from").getAsString();
             String value = eventObject.get("to").getAsString();
+            // Android doesn't have 'initHeartbeat' & 'heartbeatUpdatePlayhead' events.
             if(value.equals("initHeartbeat") || value.equals("heartbeatUpdatePlayhead")){
                 continue;
             }
@@ -129,6 +125,25 @@ public class Utils {
         return defaultValue;
     }
 
+
+    /**
+     * Used for Video Events:
+     * Inspects the event payload and retrieves the value described in the field. Field respects dot
+     * notation (myObject.name) for event properties. If there is a dot present at the beginning of
+     * the field, it will retrieve the value from the root of the payload.
+     *
+     * <p>Examples:
+     *
+     * <ul>
+     *   <li><code>myObject.name</code> = <code>track.properties.myObject.name</code>
+     *   <li><code>.userId</code> = <code>identify.userId</code>
+     *   <li><code>.context.library</code> = <code>track.context.library</code>
+     * </ul>
+     *
+     * @param field Field name.
+     * @param element Event payload.
+     * @return The value if found, <code>null</code> otherwise.
+     */
     public static Object searchValue(String field, RudderMessage element) {
         if (field == null || field.trim().length() == 0) {
             throw new IllegalArgumentException("The field name must be defined");
