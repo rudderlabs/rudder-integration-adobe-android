@@ -1,6 +1,10 @@
 package com.rudderstack.android.integrations.adobe;
 
 
+import android.annotation.SuppressLint;
+import android.app.Activity;
+import android.app.Application;
+import android.os.Bundle;
 import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
@@ -40,7 +44,6 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
     private static final String ADOBE_KEY = "Adobe Analytics";
     private AdobeDestinationConfig destinationConfig;
 
-    private RudderLogger logger;
     private VideoAnalytics video;
 
     private static final Map<String, Object> eventsMapping = new HashMap<String, Object>(){
@@ -123,6 +126,52 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
             Config.setDebugLogging(true);
             video.setDebugLogging(true);
         }
+
+        RudderClient
+                .getApplication()
+                .registerActivityLifecycleCallbacks(
+                        new Application.ActivityLifecycleCallbacks() {
+                            @Override
+                            public void onActivityCreated(Activity activity, Bundle savedInstanceState) {
+                                Config.setContext(activity.getApplicationContext());
+                                RudderLogger.logVerbose("Config.setContext();");
+                            }
+
+                            @Override
+                            public void onActivityResumed(Activity activity) {
+                                Config.collectLifecycleData();
+                                RudderLogger.logVerbose("Config.collectLifecycleData(" + activity + ");");
+                            }
+
+                            @Override
+                            public void onActivityPaused(Activity activity) {
+                                Config.pauseCollectingLifecycleData();
+                                RudderLogger.logVerbose("Config.pauseCollectingLifecycleData();");
+                            }
+
+                            @SuppressLint("RestrictedApi")
+                            @Override
+                            public void onActivityStopped(@NonNull Activity activity) {
+                                // Nothing to Implement
+                            }
+
+                            @Override
+                            public void onActivitySaveInstanceState(@NonNull Activity activity, @Nullable Bundle bundle) {
+                                // Nothing to implement
+                            }
+
+                            @Override
+                            public void onActivityDestroyed(@NonNull Activity activity) {
+                                // Nothing to implement
+                            }
+
+                            @SuppressLint("RestrictedApi")
+                            @Override
+                            public void onActivityStarted(@NonNull Activity activity) {
+                                // Nothing to implement
+                            }
+                        }
+                );
     }
 
     private void processRudderEvent(RudderMessage element) {
@@ -142,7 +191,7 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
                     if(eventName == null)
                         return;
 
-                    Map<String, Object> mappedEvents = destinationConfig.rudderEventsToAdobeEvents;
+//                    Map<String, Object> mappedEvents = destinationConfig.rudderEventsToAdobeEvents;
                     Map<String, Object> eventProperties = element.getProperties();
 
                     // If it is Video Analytics event
@@ -158,11 +207,10 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
                         if (destinationConfig.rudderEventsToAdobeEvents != null
                                 && destinationConfig.rudderEventsToAdobeEvents.containsKey(eventName)) {
                             RudderLogger.logVerbose(
-                                    "Rudderstack currently does not support mapping specced ecommerce events to "
+                                    "Rudderstack currently does not support mapping ecommerce events to "
                                             + "custom Adobe events.");
                             return;
                         }
-
                         try {
                             handleEcommerce(eventsMapping.get(eventName.toLowerCase()), eventProperties);
                         } catch (JSONException e) {
@@ -174,29 +222,28 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
                     if (destinationConfig.rudderEventsToAdobeEvents == null
                             || destinationConfig.rudderEventsToAdobeEvents.size() == 0
                             || !destinationConfig.rudderEventsToAdobeEvents.containsKey(eventName)) {
-                        RudderLogger.logVerbose("Event must be either configured in Adobe and in the Rudderstackt setting, "
+                        RudderLogger.logVerbose("Event must be either configured in Adobe and in the Rudderstack setting, "
                                         + "or it should be a reserved Adobe Ecommerce or Video event.");
                         return;
                     }
 
                     // Custom Track call
-                    Map<String, Object> cdata = getContextData(eventProperties);
-                    Analytics.trackAction((String) mappedEvents.get(eventName), cdata);
+                    Map<String, Object> contextData = getContextData(eventProperties);
+                    Analytics.trackAction((String) destinationConfig.rudderEventsToAdobeEvents.get(eventName), contextData);
                     break;
 
                 case MessageType.SCREEN:
                     String screenName = element.getEventName();
                     if(screenName == null) {
+                        RudderLogger.logVerbose("Screen Name is empty!");
                         return;
                     }
                     if(Utils.isEmpty(element.getProperties())){
+                        RudderLogger.logVerbose(screenName+" eventProperties is null");
                         return;
                     }
                     eventProperties = element.getProperties();
-                    Map<String, Object> contextDataScreen = new HashMap<>();
-                    for (Map.Entry<String, Object> entry : eventProperties.entrySet()) {
-                        contextDataScreen.put(entry.getKey(), entry.getValue());
-                    }
+                    Map<String, Object> contextDataScreen = getContextData(eventProperties);
                     Analytics.trackState(screenName, contextDataScreen);
                     break;
 
@@ -211,7 +258,6 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
         return (String) destinationConfig.videoEvents.get(eventName);
     }
 
-
     private boolean isVideoEvent(String eventName) {
         return destinationConfig.videoEvents.containsKey(eventName);
     }
@@ -219,6 +265,7 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
     @Override
     public void reset() {
         Config.setUserIdentifier(null);
+        RudderLogger.logVerbose("Adobe Analytics setUserIdentifier(null).");
     }
 
     @Override
@@ -233,32 +280,10 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
     }
 
     private Map<String, Object> getContextData(Map<String, Object> eventProperties) {
-
         // Remove products just in case
         eventProperties.remove("products");
-
         Map<String, Object> contextData = new HashMap<>();
-
-        // Handling the custom mapped properties
-        if(!Utils.isEmpty(destinationConfig.contextData) && !Utils.isEmpty(eventProperties)) {
-            for (Map.Entry<String, Object> contextDataVariables : destinationConfig.contextData.entrySet()) {
-                if (eventProperties.containsKey(contextDataVariables.getKey())) {
-                    contextData.put((String) contextDataVariables.getValue(), eventProperties.get(contextDataVariables.getKey()));
-                    eventProperties.remove(contextDataVariables.getKey());
-                }
-            }
-        }
-
-        // Add all eventProperties which are left
-        // And add prefix to the eventName
-        if(!Utils.isEmpty(eventProperties)){
-            for (String extraProperty : eventProperties.keySet()) {
-                String variable = destinationConfig.contextDataPrefix + extraProperty;
-                contextData.put(variable, Utils.getString(eventProperties.get(extraProperty)));
-            }
-            eventProperties.clear();
-        }
-
+        contextData.putAll(getMappedAndExtraProperties(eventProperties));
         if (contextData.size() == 0) {
             return null;
         }
@@ -270,7 +295,7 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
         Map<String, Object> contextData = new HashMap<>();
         contextData.put("&&events", eventName);
 
-        // If products variable is present
+        // If products variable is present in the payload
         String products;
         if (!Utils.isEmpty(eventProperties) && eventProperties.containsKey("products")) {
             products = getProductsString(getJSONArray(eventProperties.get("products")));
@@ -306,10 +331,21 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
             eventProperties.remove("orderId");
         }
 
+        contextData.putAll(getMappedAndExtraProperties(eventProperties));
+
+        // Track Call for E-Commerce event
+        Analytics.trackAction((String) eventName, contextData);
+    }
+
+    // For custom mapped properties done at Rudderstack dashboard
+    // and extra properties handling with prefix
+    private Map<String, Object> getMappedAndExtraProperties(Map<String, Object> eventProperties) {
+        Map<String, Object> contextData = new HashMap<>();
+
         // Handling the custom mapped properties
         if(!Utils.isEmpty(destinationConfig.contextData) && !Utils.isEmpty(eventProperties)) {
-            for(Map.Entry<String, Object> contextDataVariables : destinationConfig.contextData.entrySet() ) {
-                if(eventProperties.containsKey(contextDataVariables.getKey())){
+            for (Map.Entry<String, Object> contextDataVariables : destinationConfig.contextData.entrySet()) {
+                if (eventProperties.containsKey(contextDataVariables.getKey())) {
                     contextData.put((String) contextDataVariables.getValue(), eventProperties.get(contextDataVariables.getKey()));
                     eventProperties.remove(contextDataVariables.getKey());
                 }
@@ -325,9 +361,7 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
             }
             eventProperties.clear();
         }
-
-        // Track Call for E-Commerce event
-        Analytics.trackAction((String) eventName, contextData);
+        return contextData;
     }
 
     @NonNull
@@ -343,24 +377,28 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
         return new JSONArray((ArrayList) object);
     }
 
+    // For handling the products array present inside the event payload.
     private String getProductsString(JSONArray products) throws JSONException {
         StringBuilder productString = new StringBuilder();
         for(int i = 0; i < products.length(); i++) {
             JSONObject productObject = (JSONObject) products.get(i);
-
             Map<String, Object> product = new HashMap<>();
+
             product.putAll(new Gson().fromJson(productObject.toString(), HashMap.class));
 
             if(productString.length() != 0) {
                 productString.append(",");
             }
+
             productString.append(getProductsStrings(product));
             productString = removeSemicolon(productString);
         }
         return productString.toString();
     }
 
-    // If Category, name, product_id is present at the root.
+    // For constructing product string in the format as required by Adobe.
+    // Also, handles the case when the products specs is present at the root level
+    // i.e., inside the event payload, not in the product variable.
     private String getProductsStrings(Map<String, Object> product) {
         StringBuilder productString = new StringBuilder();
 
@@ -406,6 +444,22 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
         return productString.toString();
     }
 
+    /**
+     * Sets the product ID using productIdentifier configured at the settings.
+     *(supported values are <code>name</code>, <code>sku</code> and <code>id</code>.
+     * If the field is not present, it fallbacks to "productId" and "id".
+     *
+     * <p>Currently we do not allow to have products without IDs. Adobe Analytics allows to send an
+     * extra product for merchandising evars and event serialization, as seen over here
+     * <a href="https://experienceleague.adobe.com/docs/analytics/implementation/vars/page-vars/products.html?lang=en#">
+     * docs</a>, but it is not well documented and does not conform Rudderstack's spec.
+     *
+     * <p><b>NOTE: Ecommerce spec defines "product_id" instead of "id". We fallback to "id" to
+     * keep backwards compatibility.</b>
+     *
+     * @param eventProduct Event's product.
+     * @throws IllegalArgumentException if the product does not have an ID.
+     */
     private String getProductId(Map<String, Object> eventProduct) {
 
         String id = null;
@@ -417,17 +471,17 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
             }
         }
 
-        // Fallback to "productId" as V2 ecommerce spec
+        // Fallback to "productId" as ecommerce spec
         if (id == null || id.trim().length() == 0) {
             id = Utils.getString(eventProduct.get("productId"));
         }
 
-        // Fallback to "product_id" as V2 ecommerce spec
+        // Fallback to "product_id" as ecommerce spec
         if (id == null || id.trim().length() == 0) {
             id = Utils.getString(eventProduct.get("product_id"));
         }
 
-        // Fallback to "id" as V1 ecommerce spec
+        // Fallback to "id" as ecommerce spec
         if (id == null || id.trim().length() == 0) {
             id = Utils.getString(eventProduct.get("id"));
         }
