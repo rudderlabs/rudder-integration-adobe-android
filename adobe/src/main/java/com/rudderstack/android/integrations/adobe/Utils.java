@@ -6,6 +6,8 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
+import com.rudderstack.android.sdk.core.RudderContext;
+import com.rudderstack.android.sdk.core.RudderLogger;
 import com.rudderstack.android.sdk.core.RudderMessage;
 
 import java.lang.reflect.Type;
@@ -14,52 +16,23 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Utils {
-    // returns the eventMap of the given priority from the contextVariables supplied by the destination config
-    public static Map<String, Object> getContextMap(@NonNull JsonArray contextVariables) {
-        if(isEmpty(contextVariables)) {
+
+    public static Map<String, Object> getMappedRudderEvents(JsonArray mappedERudderEvents, boolean isVideoMappedEvent) {
+        if(isEmpty(mappedERudderEvents)) {
             return null;
         }
-        Map<String, Object> eventMap = new HashMap<>();
-        for (int i = 0; i < contextVariables.size(); i++) {
-            JsonObject eventObject = (JsonObject) contextVariables.get(i);
+        Map<String, Object> mappedEvents = new HashMap<>();
+        for (int i = 0; i < mappedERudderEvents.size(); i++) {
+            JsonObject eventObject = (JsonObject) mappedERudderEvents.get(i);
             String eventName = eventObject.get("from").getAsString();
-            Object value = eventObject.get("to").getAsString();
-            eventMap.put(eventName,value);
-        }
-        return eventMap;
-    }
-
-    public static Map<String, Object> getEventsMap(JsonArray rudderEventsToAdobeEventsMaps) {
-        if(isEmpty(rudderEventsToAdobeEventsMaps)) {
-            return null;
-        }
-        Map<String, Object> eventMap = new HashMap<>();
-        for (int i = 0; i < rudderEventsToAdobeEventsMaps.size(); i++) {
-            JsonObject eventObject = (JsonObject) rudderEventsToAdobeEventsMaps.get(i);
-            String eventName = eventObject.get("from").getAsString();
-            String value = eventObject.get("to").getAsString();
-            eventMap.put(eventName,value);
-        }
-        return eventMap;
-    }
-
-    public static Map<String, Object> getVideoEventsMap(JsonArray videoEventsMap) {
-        if(isEmpty(videoEventsMap)) {
-            return null;
-        }
-
-        Map<String, Object> videoEventMap = new HashMap<>();
-        for (int i = 0; i < videoEventsMap.size(); i++) {
-            JsonObject eventObject = (JsonObject) videoEventsMap.get(i);
-            String eventName = eventObject.get("from").getAsString();
-            String value = eventObject.get("to").getAsString();
-            // Android doesn't have 'initHeartbeat' & 'heartbeatUpdatePlayhead' events.
-            if(value.equals("initHeartbeat") || value.equals("heartbeatUpdatePlayhead")){
+            Object eventValue = eventObject.get("to").getAsString();
+            if (isVideoMappedEvent &&
+                    (eventValue.equals("initHeartbeat") || eventValue.equals("heartbeatUpdatePlayhead"))) {
                 continue;
             }
-            videoEventMap.put(eventName,value);
+            mappedEvents.put(eventName, eventValue);
         }
-        return videoEventMap;
+        return mappedEvents;
     }
 
     public static boolean isEmpty(JsonArray value) {
@@ -68,6 +41,10 @@ public class Utils {
 
     public static boolean isEmpty(Map<String, Object> val){
         return (val == null || val.size() == 0);
+    }
+
+    public static boolean isEmpty(String val) {
+        return (val == null || val.trim().isEmpty());
     }
 
     public static boolean getBoolean(Object value, boolean defaultValue) {
@@ -105,6 +82,8 @@ public class Utils {
             try {
                 return Double.valueOf((String) value);
             } catch (NumberFormatException ignored) {
+                RudderLogger.logDebug("Unable to convert the value: " + value +
+                        " to Double, using the defaultValue: " + defaultValue);
             }
         }
         return defaultValue;
@@ -120,11 +99,12 @@ public class Utils {
             try {
                 return Long.valueOf((String) value);
             } catch (NumberFormatException ignored) {
+                RudderLogger.logDebug("Unable to convert the value: " + value +
+                        " to Long, using the defaultValue: " + defaultValue);
             }
         }
         return defaultValue;
     }
-
 
     /**
      * Used for Video Events:
@@ -144,33 +124,32 @@ public class Utils {
      * @param element Event payload.
      * @return The value if found, <code>null</code> otherwise.
      */
-    public static Object searchValue(String field, RudderMessage element) {
+    public static Object getMappedContextValue(String field, RudderMessage element) {
         if (field == null || field.trim().length() == 0) {
             throw new IllegalArgumentException("The field name must be defined");
         }
-
         String[] searchPaths = field.split("\\.");
 
-        // Using the properties object as starting point by default.
-        Map<String, Object> values = element.getProperties();
+        // Using the eventProperties object as starting point by default.
+        Map<String, Object> payload = element.getProperties();
 
         // Dot is present at the beginning of the field name
         if (searchPaths[0].equals("")) {
             // Using the root of the payload as starting point
-
-            // Converting to Map type
+            // and converting to Map type
             Gson newGson = new Gson();
             Type type = new TypeToken<Map<String, Object>>(){}.getType();
-            values = newGson.fromJson(newGson.toJson(element), type);
+            payload = newGson.fromJson(newGson.toJson(element), type);
+
             searchPaths = Arrays.copyOfRange(searchPaths, 1, searchPaths.length);
         }
 
-        return searchValue(searchPaths, values);
+        return getMappedContextValue(searchPaths, payload);
     }
 
-    private static Object searchValue(String[] searchPath, Map<String, Object> eventProperty) {
+    private static Object getMappedContextValue(String[] searchPath, Map<String, Object> payload) {
 
-        Map<String, Object> currentValues = eventProperty;
+        Map<String, Object> totalPayload = payload;
 
         for (int i = 0; i < searchPath.length; i++) {
             String path = searchPath[i];
@@ -179,22 +158,22 @@ public class Utils {
                 throw new IllegalArgumentException("Invalid field name");
             }
 
-            if (!currentValues.containsKey(path)) {
+            if (!totalPayload.containsKey(path)) {
                 return null;
             }
 
-            Object value = currentValues.get(path);
-            if (value == null) {
+            Object currentPayload = totalPayload.get(path);
+            if (currentPayload == null) {
                 return null;
             }
 
             if (i == searchPath.length - 1) {
-                return value;
+                return currentPayload;
             }
 
-            if (value instanceof Map) {
+            if (currentPayload instanceof Map) {
                 try {
-                    currentValues = (Map<String, Object>) value;
+                    totalPayload = (Map<String, Object>) currentPayload;
                 } catch (ClassCastException e) {
                     return null;
                 }

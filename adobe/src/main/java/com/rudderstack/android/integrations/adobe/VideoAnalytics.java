@@ -94,13 +94,13 @@ public class VideoAnalytics {
     public void track(String eventName, RudderMessage element) {
 
         if (heartbeatTrackingServerUrl == null || heartbeatTrackingServerUrl.length() == 0) {
-            RudderLogger.logVerbose("Please enter a Heartbeat Tracking Server URL in your Rudderstack UI "
+            RudderLogger.logDebug("Please enter a Heartbeat Tracking Server URL in your Rudderstack UI "
                             + "Settings in order to send video events to Adobe Analytics");
             return;
         }
 
         if (!eventName.equals("heartbeatPlaybackStarted") && !sessionStarted) {
-            RudderLogger.logVerbose("Video session has not started yet.");
+            RudderLogger.logDebug("Video session has not started yet.");
             return;
         }
 
@@ -181,21 +181,21 @@ public class VideoAnalytics {
         Map<String, Object> eventProperties = element.getProperties();
 
         if (Utils.isEmpty(eventProperties)) {
-            RudderLogger.logVerbose("Event properties should not be empty for Playback Start Event!");
+            RudderLogger.logDebug("Event properties should not be empty for Playback Start Event!");
             return;
         }
 
         MediaHeartbeatConfig config = new MediaHeartbeatConfig();
         config.trackingServer = heartbeatTrackingServerUrl;
-        config.channel = (String) eventProperties.get("channel");
-        if (config.channel == null) {
+        config.channel = Utils.getString(eventProperties.get("channel"));
+        if (Utils.isEmpty(config.channel)) {
             config.channel = "";
         }
 
-        config.playerName = (String) eventProperties.get("videoPlayer");
-        if (config.playerName == null) {
-            config.playerName = (String) eventProperties.get("video_player");
-            if (config.playerName == null) {
+        config.playerName = Utils.getString(eventProperties.get("video_player"));
+        if (Utils.isEmpty(config.playerName)) {
+            config.playerName = Utils.getString(eventProperties.get("videoPlayer"));
+            if (Utils.isEmpty(config.playerName)) {
                 config.playerName = "unknown";
             }
         }
@@ -203,26 +203,7 @@ public class VideoAnalytics {
         config.appVersion = packageName;
         config.ssl = ssl;
         config.debugLogging = debug;
-
-        //RudderOption portion: will be implemented later
-//        Map<String, Object> eventOptions = RudderOption.integrations().getValueMap("Adobe Analytics");
-//        if (eventOptions != null && eventOptions.get("ovpName") != null) {
-//            config.ovp = Utils.getString(eventOptions.get("ovpName"));
-//        } else if (eventOptions != null && eventOptions.get("ovp_name") != null) {
-//            config.ovp = Utils.getString(eventOptions.get("ovp_name"));
-//        } else if (eventOptions != null && eventOptions.get("ovp") != null) {
-//            config.ovp = Utils.getString(eventOptions.get("ovp"));
-//        } else {
-//            config.ovp = "unknown";
-//        }
-        // Temporary fix, fetching ovp from eventProperties else setting config.ovp = "unknown";
-        // (Should be changed later when RudderOption portion is implemented.
-        if (eventProperties.containsKey("ovp")) {
-            config.ovp = Utils.getString(eventProperties.get("ovp"));
-        }
-        else {
-            config.ovp = "unknown";
-        }
+        config.ovp = "unknown";
 
         playback = new PlaybackDelegate();
         heartbeat = heartbeatFactory.get(playback, config);
@@ -442,16 +423,16 @@ public class VideoAnalytics {
 
             if(!Utils.isEmpty(contextData)) {
                 for (String field : contextData.keySet()) {
-                    Object value = null;
+                    Object mappedContextValue = null;
                     try {
-                        value = Utils.searchValue(field, element);
+                        mappedContextValue = Utils.getMappedContextValue(field, element);
                     } catch (IllegalArgumentException e) {
                         // Ignore.
                     }
 
-                    if (value != null) {
-                        String variable = Utils.getString(contextData.get(field));
-                        cdata.put(variable, String.valueOf(value));
+                    if (mappedContextValue != null) {
+                        String mappedContextName = Utils.getString(contextData.get(field));
+                        cdata.put(mappedContextName, String.valueOf(mappedContextValue));
                         extraProperties.remove(field);
                     }
                 }
@@ -460,8 +441,8 @@ public class VideoAnalytics {
             // Add extra properties.
             if(!Utils.isEmpty(extraProperties)) {
                 for (String extraProperty : extraProperties.keySet()) {
-                    String variable = prefix + extraProperty;
-                    cdata.put(variable, Utils.getString(extraProperties.get(extraProperty)));
+                    String propertyName = prefix + extraProperty;
+                    cdata.put(propertyName, Utils.getString(extraProperties.get(extraProperty)));
                 }
             }
 
@@ -475,23 +456,21 @@ public class VideoAnalytics {
 
             Map<String, Object> eventProperties = element.getProperties();
 
-            String title = Utils.getString(eventProperties.get("title"));
-            long indexPosition =
-                    Utils.getLong(eventProperties.get("indexPosition"), 1);
-            if (indexPosition == 1) {
-                indexPosition = Utils.getLong(eventProperties.get("index_position"), 1);
+            String chapter_name = Utils.getString(eventProperties.get("chapter_name"));
+            if (Utils.isEmpty(chapter_name)) {
+                chapter_name = "no chapter name";
             }
-            double totalLength = Utils.getDouble(eventProperties.get("totalLength"), 0);
-            if (totalLength == 0) {
-                totalLength = Utils.getDouble(eventProperties.get("total_length"), 0);
-            }
-            double startTime = Utils.getDouble(eventProperties.get("startTime"), 0);
-            if (startTime == 0) {
-                startTime = Utils.getDouble(eventProperties.get("start_time"), 0);
+            long position = Utils.getLong(eventProperties.get("position"), 1);
+            
+            double length = Utils.getDouble(eventProperties.get("length"), 6000);
+
+            double start_time = Utils.getDouble(eventProperties.get("start_time"), 0);
+            if (start_time == 0) {
+                start_time = Utils.getDouble(eventProperties.get("startTime"), 0);
             }
 
             MediaObject media =
-                    MediaHeartbeat.createChapterObject(title, indexPosition, totalLength, startTime);
+                    MediaHeartbeat.createChapterObject(chapter_name, position, length, start_time);
             media.setValue(MediaHeartbeat.MediaObjectKey.StandardVideoMetadata, metadata);
             return media;
         }
@@ -500,25 +479,32 @@ public class VideoAnalytics {
             if (element.getProperties().isEmpty()) {
                 return null;
             }
-
             Map<String, Object> eventProperties = element.getProperties();
 
             String title = Utils.getString(eventProperties.get("title"));
-            String contentAssetId = Utils.getString(eventProperties.get("contentAssetId"));
-            if (contentAssetId == null || contentAssetId.trim().isEmpty()) {
-                contentAssetId = Utils.getString(eventProperties.get("content_asset_id"));
+            if (Utils.isEmpty(title)) {
+                title = "no title";
             }
-            double totalLength = Utils.getDouble(eventProperties.get("totalLength"), 0);
-            if (totalLength == 0) {
-                totalLength = Utils.getDouble(eventProperties.get("total_length"), 0);
+
+            String asset_id = Utils.getString(eventProperties.get("asset_id"));
+            if (Utils.isEmpty(asset_id) && eventProperties.containsKey("assetId")) {
+                asset_id = Utils.getString(eventProperties.get("assetId"));
             }
-            String format = MediaHeartbeat.StreamType.LIVE;
+            if (Utils.isEmpty(asset_id)) {
+                asset_id = "default ad";
+            }
+
+            double total_length = Utils.getDouble(eventProperties.get("total_length"), 0);
+            if (total_length == 0) {
+                total_length = Utils.getDouble(eventProperties.get("totalLength"), 0);
+            }
+            String livestream = MediaHeartbeat.StreamType.LIVE;
             if (!Utils.getBoolean(eventProperties.get("livestream"), false)) {
-                format = MediaHeartbeat.StreamType.VOD;
+                livestream = MediaHeartbeat.StreamType.VOD;
             }
 
             MediaObject media =
-                    MediaHeartbeat.createMediaObject(title, contentAssetId, totalLength, format);
+                    MediaHeartbeat.createMediaObject(title, asset_id, total_length, livestream);
 
             media.setValue(MediaHeartbeat.MediaObjectKey.StandardVideoMetadata, metadata);
             return media;
@@ -532,20 +518,20 @@ public class VideoAnalytics {
             Map<String, Object> eventProperties = element.getProperties();
 
             String title = Utils.getString(eventProperties.get("title"));
-            String assetId = Utils.getString(eventProperties.get("assetId"));
-            if (assetId == null || assetId.trim().isEmpty()) {
-                assetId = Utils.getString(eventProperties.get("asset_id"));
-            }
-            long indexPosition = Utils.getLong(eventProperties.get("indexPosition"), 1);
-            if (indexPosition == 1) {
-                indexPosition = Utils.getLong(eventProperties.get("index_position"), 1);
-            }
-            double totalLength = Utils.getDouble(eventProperties.get("totalLength"), 0);
-            if (totalLength == 0) {
-                totalLength = Utils.getDouble(eventProperties.get("total_length"), 0);
+
+            String asset_id = Utils.getString(eventProperties.get("asset_id"));
+            if (Utils.isEmpty(asset_id)) {
+                asset_id = Utils.getString(eventProperties.get("assetId"));
             }
 
-            MediaObject media = MediaHeartbeat.createAdObject(title, assetId, indexPosition, totalLength);
+            long position = Utils.getLong(eventProperties.get("position"), 1);
+
+            double total_length = Utils.getDouble(eventProperties.get("total_length"), 0);
+            if (total_length == 0) {
+                total_length = Utils.getDouble(eventProperties.get("totalLength"), 0);
+            }
+
+            MediaObject media = MediaHeartbeat.createAdObject(title, asset_id, position, total_length);
 
             media.setValue(MediaHeartbeat.MediaObjectKey.StandardAdMetadata, metadata);
             return media;
@@ -559,17 +545,15 @@ public class VideoAnalytics {
             Map<String, Object> eventProperties = element.getProperties();
 
             String title = Utils.getString(eventProperties.get("title"));
-            long indexPosition =
-                    Utils.getLong(eventProperties.get("indexPosition"), 1);
-            if (indexPosition == 1) {
-                indexPosition = Utils.getLong(eventProperties.get("index_position"), 1);
-            }
+
+            long position = Utils.getLong(eventProperties.get("position"), 1);
+
             double startTime = Utils.getDouble(eventProperties.get("startTime"), 0);
             if (startTime == 0) {
                 startTime = Utils.getDouble(eventProperties.get("start_time"), 0);
             }
-            MediaObject media = MediaHeartbeat.createAdBreakObject(title, indexPosition, startTime);
 
+            MediaObject media = MediaHeartbeat.createAdBreakObject(title, position, startTime);
             return media;
         }
     }

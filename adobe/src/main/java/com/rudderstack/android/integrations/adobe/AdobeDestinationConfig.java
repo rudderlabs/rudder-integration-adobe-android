@@ -10,6 +10,7 @@ public class AdobeDestinationConfig {
     final boolean ssl;
     final String contextDataPrefix;
     final String productIdentifier;
+    final boolean isTrackLifecycleEvents;
 
     public AdobeDestinationConfig
             (String heartbeatTrackingServerUrl,
@@ -18,7 +19,8 @@ public class AdobeDestinationConfig {
              Map<String, Object> videoEvents,
              boolean ssl,
              String contextDataPrefix,
-             String productIdentifier) {
+             String productIdentifier,
+             boolean isTrackLifecycleEvents) {
 
         this.contextData = contextData;
         this.heartbeatTrackingServerUrl = heartbeatTrackingServerUrl;
@@ -26,6 +28,7 @@ public class AdobeDestinationConfig {
         this.videoEvents = videoEvents;
         this.ssl = ssl;
         this.productIdentifier = productIdentifier;
+        this.isTrackLifecycleEvents = isTrackLifecycleEvents;
 
         // "a." is reserved by Adobe Analytics
         if (contextDataPrefix == null || contextDataPrefix.equals("a.")) {
