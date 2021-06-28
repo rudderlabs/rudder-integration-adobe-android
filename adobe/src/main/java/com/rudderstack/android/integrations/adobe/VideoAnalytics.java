@@ -433,7 +433,9 @@ public class VideoAnalytics {
                     if (mappedContextValue != null) {
                         String mappedContextName = Utils.getString(contextData.get(field));
                         cdata.put(mappedContextName, String.valueOf(mappedContextValue));
-                        extraProperties.remove(field);
+                        if (!Utils.isEmpty(extraProperties)) {
+                            extraProperties.remove(field);
+                        }
                     }
                 }
             }

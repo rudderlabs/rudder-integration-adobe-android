@@ -22,6 +22,7 @@ import com.google.gson.JsonParseException;
 import com.rudderstack.android.sdk.core.MessageType;
 import com.rudderstack.android.sdk.core.RudderClient;
 import com.rudderstack.android.sdk.core.RudderConfig;
+import com.rudderstack.android.sdk.core.RudderContext;
 import com.rudderstack.android.sdk.core.RudderIntegration;
 import com.rudderstack.android.sdk.core.RudderLogger;
 import com.rudderstack.android.sdk.core.RudderMessage;
@@ -216,7 +217,7 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
                             return;
                         }
                         try {
-                            handleEcommerce(eventsMapping.get(eventName.toLowerCase()), eventProperties);
+                            handleEcommerce(eventsMapping.get(eventName.toLowerCase()), eventProperties, element);
                         } catch (JSONException e) {
                             RudderLogger.logDebug("JSONException occurred. Aborting track call.");
                         }
@@ -233,7 +234,7 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
                         }
 
                     // Custom Track call
-                    Map<String, Object> contextData = getContextData(eventProperties);
+                    Map<String, Object> contextData = getContextData(eventProperties, element);
                     Analytics.trackAction((String) destinationConfig.rudderEventsToAdobeEvents.get(eventName), contextData);
                     break;
 
@@ -244,11 +245,10 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
                         return;
                     }
                     if(Utils.isEmpty(element.getProperties())){
-                        RudderLogger.logDebug(screenName+" eventProperties is null");
+                        RudderLogger.logDebug("Analytics.trackState(" + screenName + ") eventProperties is null");
                         return;
                     }
-                    eventProperties = element.getProperties();
-                    Map<String, Object> contextDataScreen = getContextData(eventProperties);
+                    Map<String, Object> contextDataScreen = getContextData(element.getProperties(), element);
                     Analytics.trackState(screenName, contextDataScreen);
                     break;
 
@@ -284,45 +284,40 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
         }
     }
 
-    private Map<String, Object> getContextData(Map<String, Object> eventProperties) {
-        // Remove products just in case
-        eventProperties.remove("products");
-        Map<String, Object> contextData = new HashMap<>();
-        contextData.putAll(getMappedAndExtraProperties(eventProperties));
-        if (contextData.size() == 0) {
-            return null;
-        }
-        return contextData;
-    }
-
-    private void handleEcommerce(Object eventName, Map<String, Object> eventProperties) throws JSONException {
+    private void handleEcommerce(Object eventName, Map<String, Object> eventProperties, RudderMessage element) throws JSONException {
 
         Map<String, Object> contextData = new HashMap<>();
         contextData.put("&&events", eventName);
 
         // If products variable is present in the payload
-        String products;
+        String products = null;
         if (!Utils.isEmpty(eventProperties) && eventProperties.containsKey("products")) {
             products = getProductsString(getJSONArray(eventProperties.get("products")));
             eventProperties.remove("products");
         }
-        // If product is not present, then look for category, quantity, price and productIdentifier
-        // at the root level i.e., at eventProperties.
-        else {
-            products = getProductsStrings(eventProperties);
-            eventProperties.remove("category");
-            eventProperties.remove("quantity");
-            eventProperties.remove("price");
-            String idKey = destinationConfig.productIdentifier;
-            if (idKey == null || idKey.equals("id")) {
-                eventProperties.remove("productId");
-                eventProperties.remove("product_id");
-            } else {
-                eventProperties.remove(idKey);
+        // If product is not present, then look for 'category', 'quantity', 'price' and
+        // 'productId' at the root level.
+        else if (!Utils.isEmpty(eventProperties)){
+            try {
+                products = getProductsStrings(eventProperties);
+                eventProperties.remove("category");
+                eventProperties.remove("quantity");
+                eventProperties.remove("price");
+                if(destinationConfig.productIdentifier.equals("id")) {
+                    eventProperties.remove("productId");
+                    eventProperties.remove("product_id");
+                    eventProperties.remove("id");
+                }
+                else {
+                    eventProperties.remove(destinationConfig.productIdentifier);
+                }
+            } catch (IllegalArgumentException e) {
+                RudderLogger.logDebug("You must provide a name for each product to pass an ecommerce event"
+                        + "to Adobe Analytics.");
             }
         }
 
-        if (products != null && products.trim().length() != 0) {
+        if (!Utils.isEmpty(products)) {
             contextData.put("&&products", products);
         }
 
@@ -336,23 +331,40 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
             eventProperties.remove("orderId");
         }
 
-        contextData.putAll(getMappedAndExtraProperties(eventProperties));
+        contextData.putAll(getMappedAndExtraProperties(eventProperties, element));
 
         // Track Call for E-Commerce event
         Analytics.trackAction((String) eventName, contextData);
     }
 
-    // For custom mapped properties done at Rudderstack dashboard
-    // and extra properties handling with prefix
-    private Map<String, Object> getMappedAndExtraProperties(Map<String, Object> eventProperties) {
+    private Map<String, Object> getContextData(Map<String, Object> eventProperties, RudderMessage element) {
+        // Remove products just in case
+        if (!Utils.isEmpty(eventProperties)) {
+            eventProperties.remove("products");
+        }
+
+        return getMappedAndExtraProperties(eventProperties, element);
+    }
+
+    private Map<String, Object> getMappedAndExtraProperties(Map<String, Object> eventProperties, RudderMessage element) {
         Map<String, Object> contextData = new HashMap<>();
 
         // Handling the custom mapped properties
-        if(!Utils.isEmpty(destinationConfig.contextData) && !Utils.isEmpty(eventProperties)) {
-            for (Map.Entry<String, Object> contextDataVariables : destinationConfig.contextData.entrySet()) {
-                if (eventProperties.containsKey(contextDataVariables.getKey())) {
-                    contextData.put((String) contextDataVariables.getValue(), eventProperties.get(contextDataVariables.getKey()));
-                    eventProperties.remove(contextDataVariables.getKey());
+        if(!Utils.isEmpty(destinationConfig.contextData)) {
+            for (String field : destinationConfig.contextData.keySet()) {
+                Object mappedContextValue = null;
+                try {
+                    mappedContextValue = Utils.getMappedContextValue(field, element);
+                } catch (IllegalArgumentException e) {
+                    // Ignore.
+                }
+
+                if (mappedContextValue != null) {
+                    String mappedContextName = Utils.getString(destinationConfig.contextData.get(field));
+                    contextData.put(mappedContextName, String.valueOf(mappedContextValue));
+                    if (!Utils.isEmpty(eventProperties)) {
+                        eventProperties.remove(field);
+                    }
                 }
             }
         }
@@ -382,28 +394,36 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
         return new JSONArray((ArrayList) object);
     }
 
-    // For handling the products array present inside the event payload.
+    // Get the products in the String format.
     private String getProductsString(JSONArray products) throws JSONException {
-        StringBuilder productString = new StringBuilder();
+        StringBuilder productsString = new StringBuilder();
         for(int i = 0; i < products.length(); i++) {
             JSONObject productObject = (JSONObject) products.get(i);
             Map<String, Object> product = new HashMap<>();
-
             product.putAll(new Gson().fromJson(productObject.toString(), HashMap.class));
 
-            if(productString.length() != 0) {
-                productString.append(",");
+            try {
+                String productString = getProductsStrings(product);
+                if(productsString.length() != 0) {
+                    productsString.append(",");
+                }
+                productsString.append(productString);
+            } catch (IllegalArgumentException e) {
+                RudderLogger.logDebug("You must provide a name for each product to pass an ecommerce event"
+                        + "to Adobe Analytics.");
             }
-
-            productString.append(getProductsStrings(product));
-            productString = removeSemicolon(productString);
         }
-        return productString.toString();
+        return productsString.toString();
     }
 
-    // For constructing product string in the format as required by Adobe.
-    // Also, handles the case when the products specs is present at the root level
-    // i.e., inside the event payload, not in the product variable.
+    /**
+     * Get the individual product in the format, as required by Adobe:
+     * 'Category' + 'Product Name' + 'Quantity' + 'Price'
+     * <a href="https://experienceleague.adobe.com/docs/analytics/implementation/vars/page-vars/products.html?lang=en#">
+     *     docs</a>
+     *
+     * @throws IllegalArgumentException if the product does not have an ID.
+     */
     private String getProductsStrings(Map<String, Object> product) {
         StringBuilder productString = new StringBuilder();
 
@@ -413,8 +433,13 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
         }
         productString.append(";");
 
-        // product_id is necessary else it'll throw an error.
-        productString.append(getProductId(product));
+        String product_id = getProductId(product);
+        if (!Utils.isEmpty(product_id)) {
+            productString.append(product_id);
+        }
+        else {
+            throw new IllegalArgumentException("Product id is not defined.");
+        }
         productString.append(";");
 
         // Default to 1.
@@ -426,7 +451,7 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
                 try {
                     quantity = Integer.parseInt(q);
                 } catch (NumberFormatException e) {
-                    // Default.
+                    RudderLogger.logDebug("Integer.parseInt(" + q +") error!");
                 }
             }
         }
@@ -440,61 +465,44 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
                 try {
                     price = Double.parseDouble(p);
                 } catch (NumberFormatException e) {
-                    // Default.
+                    RudderLogger.logDebug("Double.parseDouble(" + p +") error!");
                 }
             }
             price = price * quantity;
             productString.append(Utils.getString(price));
         }
+        productString = removeSemicolon(productString);
         return productString.toString();
     }
 
     /**
      * Sets the product ID using productIdentifier configured at the settings.
      *(supported values are <code>name</code>, <code>sku</code> and <code>id</code>.
-     * If the field is not present, it fallbacks to "productId" and "id".
      *
      * <p>Currently we do not allow to have products without IDs. Adobe Analytics allows to send an
      * extra product for merchandising evars and event serialization, as seen over here
      * <a href="https://experienceleague.adobe.com/docs/analytics/implementation/vars/page-vars/products.html?lang=en#">
      * docs</a>, but it is not well documented and does not conform Rudderstack's spec.
      *
-     * <p><b>NOTE: Ecommerce spec defines "product_id" instead of "id". We fallback to "id" to
-     * keep backwards compatibility.</b>
-     *
      * @param eventProduct Event's product.
-     * @throws IllegalArgumentException if the product does not have an ID.
      */
     private String getProductId(Map<String, Object> eventProduct) {
 
-        String id = null;
-        String productIdentifier = destinationConfig.productIdentifier;
-        if (productIdentifier != null) {
-            // When productIdentifier is "id" use the default behavior.
-            if (!productIdentifier.equals("id")) {
-                id = Utils.getString(eventProduct.get(productIdentifier));
+        if(destinationConfig.productIdentifier.equals("id")) {
+            if (eventProduct.containsKey("productId")) {
+                return Utils.getString(eventProduct.get("productId"));
+            }
+
+            if (eventProduct.containsKey("product_id")) {
+                return Utils.getString(eventProduct.get("product_id"));
+            }
+
+            if (eventProduct.containsKey("id")) {
+                return Utils.getString(eventProduct.get("id"));
             }
         }
 
-        // Fallback to "productId" as ecommerce spec
-        if (id == null || id.trim().length() == 0) {
-            id = Utils.getString(eventProduct.get("productId"));
-        }
-
-        // Fallback to "product_id" as ecommerce spec
-        if (id == null || id.trim().length() == 0) {
-            id = Utils.getString(eventProduct.get("product_id"));
-        }
-
-        // Fallback to "id" as ecommerce spec
-        if (id == null || id.trim().length() == 0) {
-            id = Utils.getString(eventProduct.get("id"));
-        }
-
-        if (id == null || id.trim().length() == 0) {
-            throw new IllegalArgumentException("Product id is not defined.");
-        }
-        return id;
+        return Utils.getString(eventProduct.get(destinationConfig.productIdentifier));
     }
 
     // Remove all the last occurrence of semicolon from the productString

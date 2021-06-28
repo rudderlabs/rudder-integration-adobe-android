@@ -14,6 +14,7 @@ import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Observer;
 
 public class Utils {
 
@@ -107,7 +108,6 @@ public class Utils {
     }
 
     /**
-     * Used for Video Events:
      * Inspects the event payload and retrieves the value described in the field. Field respects dot
      * notation (myObject.name) for event properties. If there is a dot present at the beginning of
      * the field, it will retrieve the value from the root of the payload.
@@ -149,8 +149,10 @@ public class Utils {
 
     private static Object getMappedContextValue(String[] searchPath, Map<String, Object> payload) {
 
+        if (isEmpty(payload)) {
+            return null;
+        }
         Map<String, Object> totalPayload = payload;
-
         for (int i = 0; i < searchPath.length; i++) {
             String path = searchPath[i];
 
