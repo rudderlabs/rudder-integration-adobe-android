@@ -7,7 +7,6 @@ import com.adobe.primetime.va.simple.MediaHeartbeatConfig;
 import com.adobe.primetime.va.simple.MediaObject;
 import com.rudderstack.android.sdk.core.RudderLogger;
 import com.rudderstack.android.sdk.core.RudderMessage;
-import com.rudderstack.android.sdk.core.RudderOption;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -16,10 +15,10 @@ public class VideoAnalytics {
     private String heartbeatTrackingServerUrl;
     private String prefix;
     private Map<String, Object> contextData;
-    boolean ssl;
-    boolean debug;
+    private boolean ssl;
+    private boolean debug;
     private boolean sessionStarted;
-    String packageName;
+    private String packageName;
     private PlaybackDelegate playback;
     private MediaHeartbeat heartbeat;
     private HeartbeatFactory heartbeatFactory;
@@ -213,7 +212,6 @@ public class VideoAnalytics {
 
         heartbeat.trackSessionStart(event.getMediaObject(), event.getContextData());
         RudderLogger.logVerbose("heartbeat.trackSessionStart(MediaObject);");
-
     }
 
     private void trackVideoPlaybackPaused() {
@@ -228,8 +226,8 @@ public class VideoAnalytics {
         RudderLogger.logVerbose("heartbeat.trackPlay();");
     }
 
-    private void trackVideoContentStarted(RudderMessage track) {
-        VideoEvent event = new VideoEvent(track);
+    private void trackVideoContentStarted(RudderMessage element) {
+        VideoEvent event = new VideoEvent(element);
 
         if (Utils.getDouble(event.properties.get("position"), 0) > 0) {
             playback.updatePlayheadPosition(Utils.getLong(event.properties.get("position"), 0));
@@ -275,8 +273,8 @@ public class VideoAnalytics {
         trackAdobeEvent(MediaHeartbeat.Event.SeekStart, null, null);
     }
 
-    private void trackVideoPlaybackSeekCompleted(RudderMessage track) {
-        Map<String, Object> seekProperties = track.getProperties();
+    private void trackVideoPlaybackSeekCompleted(RudderMessage element) {
+        Map<String, Object> seekProperties = element.getProperties();
         long seekPosition = Utils.getLong(seekProperties.get("seekPosition"), 0);
         if (seekPosition == 0) {
             seekPosition = Utils.getLong(seekProperties.get("seek_position"), 0);
@@ -296,8 +294,8 @@ public class VideoAnalytics {
         trackAdobeEvent(MediaHeartbeat.Event.AdBreakComplete, null, null);
     }
 
-    private void trackVideoAdStarted(RudderMessage track) {
-        VideoEvent event = new VideoEvent(track, true);
+    private void trackVideoAdStarted(RudderMessage element) {
+        VideoEvent event = new VideoEvent(element, true);
         trackAdobeEvent(MediaHeartbeat.Event.AdStart, event.getAdObject(), event.getContextData());
     }
 
@@ -313,8 +311,8 @@ public class VideoAnalytics {
         playback.pausePlayhead();
     }
 
-    private void trackVideoQualityUpdated(RudderMessage track) {
-        playback.createAndUpdateQosObject(track.getProperties());
+    private void trackVideoQualityUpdated(RudderMessage element) {
+        playback.createAndUpdateQosObject(element.getProperties());
     }
 
     /** A wrapper for video metadata and properties. */
@@ -550,9 +548,9 @@ public class VideoAnalytics {
 
             long position = Utils.getLong(eventProperties.get("position"), 1);
 
-            double startTime = Utils.getDouble(eventProperties.get("startTime"), 0);
+            double startTime = Utils.getDouble(eventProperties.get("start_time"), 0);
             if (startTime == 0) {
-                startTime = Utils.getDouble(eventProperties.get("start_time"), 0);
+                startTime = Utils.getDouble(eventProperties.get("startTime"), 0);
             }
 
             MediaObject media = MediaHeartbeat.createAdBreakObject(title, position, startTime);
