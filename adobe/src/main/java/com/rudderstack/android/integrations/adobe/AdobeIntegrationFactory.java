@@ -199,8 +199,6 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
                     if(eventName == null)
                         return;
 
-                    Map<String, Object> eventProperties = element.getProperties();
-
                     // If it is Video Analytics event
                     if (isVideoEvent(eventName)) {
                         video.track(getVideoEvent(eventName),element);
@@ -217,7 +215,7 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
                             return;
                         }
                         try {
-                            handleEcommerce(eventsMapping.get(eventName.toLowerCase()), eventProperties, element);
+                            handleEcommerce(eventsMapping.get(eventName.toLowerCase()), element);
                         } catch (JSONException e) {
                             RudderLogger.logDebug("JSONException occurred. Aborting track call.");
                         }
@@ -234,7 +232,7 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
                         }
 
                     // Custom Track call
-                    Map<String, Object> contextData = getContextData(eventProperties, element);
+                    Map<String, Object> contextData = getCustomMappedAndExtraProperties(element);
                     Analytics.trackAction((String) destinationConfig.rudderEventsToAdobeEvents.get(eventName), contextData);
                     break;
 
@@ -248,7 +246,7 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
                         RudderLogger.logDebug("Analytics.trackState(" + screenName + ") eventProperties is null");
                         return;
                     }
-                    Map<String, Object> contextDataScreen = getContextData(element.getProperties(), element);
+                    Map<String, Object> contextDataScreen = getCustomMappedAndExtraProperties(element);
                     Analytics.trackState(screenName, contextDataScreen);
                     break;
 
@@ -284,10 +282,12 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
         }
     }
 
-    private void handleEcommerce(Object eventName, Map<String, Object> eventProperties, RudderMessage element) throws JSONException {
+    private void handleEcommerce(Object eventName, RudderMessage element) throws JSONException {
 
         Map<String, Object> contextData = new HashMap<>();
         contextData.put("&&events", eventName);
+
+        Map<String, Object> eventProperties = element.getProperties();
 
         // If products variable is present in the payload
         String products = null;
@@ -331,22 +331,18 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
             eventProperties.remove("orderId");
         }
 
-        contextData.putAll(getMappedAndExtraProperties(eventProperties, element));
+        contextData.putAll(getCustomMappedAndExtraProperties(element));
 
         // Track Call for E-Commerce event
         Analytics.trackAction((String) eventName, contextData);
     }
 
-    private Map<String, Object> getContextData(Map<String, Object> eventProperties, RudderMessage element) {
+    private Map<String, Object> getCustomMappedAndExtraProperties(RudderMessage element) {
         // Remove products just in case
+        Map<String, Object> eventProperties = element.getProperties();
         if (!Utils.isEmpty(eventProperties)) {
             eventProperties.remove("products");
         }
-
-        return getMappedAndExtraProperties(eventProperties, element);
-    }
-
-    private Map<String, Object> getMappedAndExtraProperties(Map<String, Object> eventProperties, RudderMessage element) {
         Map<String, Object> contextData = new HashMap<>();
 
         // Handling the custom mapped properties
