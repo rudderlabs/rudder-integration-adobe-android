@@ -32,8 +32,6 @@ public class VideoAnalytics {
         static {
             VIDEO_METADATA_KEYS.put("assetId", MediaHeartbeat.VideoMetadataKeys.ASSET_ID);
             VIDEO_METADATA_KEYS.put("asset_id", MediaHeartbeat.VideoMetadataKeys.ASSET_ID);
-            VIDEO_METADATA_KEYS.put("contentAssetId", MediaHeartbeat.VideoMetadataKeys.ASSET_ID);
-            VIDEO_METADATA_KEYS.put("content_asset_id", MediaHeartbeat.VideoMetadataKeys.ASSET_ID);
             VIDEO_METADATA_KEYS.put("program", MediaHeartbeat.VideoMetadataKeys.SHOW);
             VIDEO_METADATA_KEYS.put("season", MediaHeartbeat.VideoMetadataKeys.SEASON);
             VIDEO_METADATA_KEYS.put("episode", MediaHeartbeat.VideoMetadataKeys.EPISODE);
@@ -92,8 +90,7 @@ public class VideoAnalytics {
 
     public void track(String eventName, RudderMessage element) {
 
-        if(Utils.isEmpty(heartbeatTrackingServerUrl))
-        if (heartbeatTrackingServerUrl == null || heartbeatTrackingServerUrl.length() == 0) {
+        if(Utils.isEmpty(heartbeatTrackingServerUrl)) {
             RudderLogger.logDebug("Please enter a Heartbeat Tracking Server URL in your Rudderstack "
                             + "dashboard Settings in order to send video events to Adobe Analytics");
             return;
@@ -340,12 +337,15 @@ public class VideoAnalytics {
         VideoEvent(RudderMessage element, boolean isAd) {
             this.element = element;
             metadata = new HashMap<>();
+            properties = new HashMap<>();
             if (element.getProperties() != null) {
-                properties = element.getProperties();
+                Map<String, Object> eventProperties = element.getProperties();
+                properties.putAll(eventProperties);
+
                 if (isAd) {
-                    mapAdProperties(properties);
+                    mapAdProperties(eventProperties);
                 } else {
-                    mapVideoProperties(properties);
+                    mapVideoProperties(eventProperties);
                 }
             }
         }
@@ -408,13 +408,16 @@ public class VideoAnalytics {
                             "totalLength",
                             "total_length",
                             "startTime",
-                            "start_time"
+                            "start_time",
+                            "length",
+                            "chapter_name"
                     }) {
                 extraProperties.remove(key);
             }
 
             Map<String, String> cdata = new HashMap<>();
 
+            // Handling the custom mapped properties
             if(!Utils.isEmpty(contextData)) {
                 for (String field : contextData.keySet()) {
                     Object mappedContextValue = null;
