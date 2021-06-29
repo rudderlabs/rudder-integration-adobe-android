@@ -2,13 +2,9 @@ package com.rudderstack.android.sample.kotlin
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import com.adobe.primetime.va.simple.MediaHeartbeat
-import com.adobe.primetime.va.simple.MediaObject
 import com.rudderlabs.android.sample.kotlin.R
 import com.rudderstack.android.sdk.core.RudderProperty
-import org.json.JSONArray
 import org.json.JSONObject
-import java.util.*
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -16,11 +12,12 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
 //        MainApplication.rudderClient.identify("Testing4")
-        videoEvents()
+//        videoEvents()
+
 
         // Video Events:
 //         trackVideoPlaybackStarted() Video event must be called before any other Video events.
-//        trackVideoPlaybackStarted()
+        trackVideoPlaybackStarted()
 //        trackVideoPlaybackPaused()
 //        trackVideoPlaybackResumed()
 //        trackVideoContentStarted()
@@ -243,7 +240,7 @@ class MainActivity : AppCompatActivity() {
         */
 
         /*
-        // Case 3: playback with skipped ads
+        // Case 2: playback with skipped ads
         trackVideoQualityUpdated()
         //Pre-Roll
         trackVideoAdBreakStarted()
@@ -254,7 +251,7 @@ class MainActivity : AppCompatActivity() {
         */
 
         /*
-        // Case 4:
+        // Case 3:
         trackVideoQualityUpdated()
         trackVideoContentStarted()
         trackVideoContentComplete()
@@ -262,7 +259,7 @@ class MainActivity : AppCompatActivity() {
         */
 
         /*
-        // Case 5: playback with buffering
+        // Case 4: playback with buffering
         trackVideoQualityUpdated()
         trackVideoPlaybackResumed()
         trackVideoBufferStarted()
@@ -271,7 +268,7 @@ class MainActivity : AppCompatActivity() {
         */
 
         /*
-        // Case 6: seeking in the main content
+        // Case 5: seeking in the main content
         trackVideoQualityUpdated()
         trackVideoPlaybackResumed()
         trackVideoSeekStarted()
@@ -280,7 +277,7 @@ class MainActivity : AppCompatActivity() {
         */
 
         /*
-        // Case 7: playback with skipped ads
+        // Case 6: playback with skipped ads
         trackVideoQualityUpdated()
         //Pre-Roll
         trackVideoAdBreakStarted()

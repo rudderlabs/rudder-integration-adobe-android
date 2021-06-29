@@ -1,23 +1,23 @@
 package com.rudderstack.android.integrations.adobe;
 
-import androidx.annotation.NonNull;
-
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
-import com.rudderstack.android.sdk.core.RudderContext;
 import com.rudderstack.android.sdk.core.RudderLogger;
 import com.rudderstack.android.sdk.core.RudderMessage;
+
+import org.json.JSONArray;
 
 import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Observer;
 
 public class Utils {
 
+    // Get the mapping of 'custom events', 'context data' & 'video events',
+    // done at Rudderstack dashboard
     public static Map<String, Object> getMappedRudderEvents(JsonArray mappedERudderEvents, boolean isVideoMappedEvent) {
         if(isEmpty(mappedERudderEvents)) {
             return null;
@@ -36,16 +36,47 @@ public class Utils {
         return mappedEvents;
     }
 
-    public static boolean isEmpty(JsonArray value) {
-        return (value == null || value.size() == 0);
+    public static boolean isEmpty(Object value) {
+        if(value == null){
+            return true;
+        }
+
+        if (value instanceof JsonArray) {
+            return (((JsonArray) value).size() == 0);
+        }
+
+        if (value instanceof JSONArray) {
+            return (((JSONArray) value).length() == 0);
+        }
+
+        if (value instanceof Map) {
+            return (((Map<String, Object>) value).size() == 0);
+        }
+
+        if (value instanceof String) {
+            return (((String) value).trim().isEmpty());
+        }
+
+        return false;
     }
 
-    public static boolean isEmpty(Map<String, Object> val){
-        return (val == null || val.size() == 0);
-    }
+//    public static boolean isEmpty(JsonArray value) {
+//        return (value == null || value.size() == 0);
+//    }
 
-    public static boolean isEmpty(String val) {
-        return (val == null || val.trim().isEmpty());
+//    public static boolean isEmpty(Map<String, Object> val){
+//        return (val == null || val.size() == 0);
+//    }
+
+//    public static boolean isEmpty(String val) {
+//        return (val == null || val.trim().isEmpty());
+//    }
+
+    public static String getStringFromJSON(JsonObject jsonObject, String value) {
+        if (jsonObject.has(value)) {
+            return jsonObject.get(value).getAsString();
+        }
+        return "";
     }
 
     public static boolean getBoolean(Object value, boolean defaultValue) {
@@ -64,13 +95,6 @@ public class Utils {
             return String.valueOf(value);
         }
         return null;
-    }
-
-    public static String getString(JsonObject jsonObject, String value) {
-        if (jsonObject.has(value)) {
-            return jsonObject.get(value).getAsString();
-        }
-        return "";
     }
 
     public static double getDouble(Object value, double defaultValue) {
@@ -115,9 +139,9 @@ public class Utils {
      * <p>Examples:
      *
      * <ul>
-     *   <li><code>myObject.name</code> = <code>track.properties.myObject.name</code>
-     *   <li><code>.userId</code> = <code>identify.userId</code>
-     *   <li><code>.context.library</code> = <code>track.context.library</code>
+     *   <li><code>.myObject.name</code> = <code>message.properties.myObject.name</code>
+     *   <li><code>.userId</code> = <code>message.userId</code>
+     *   <li><code>.context.library</code> = <code>message.context.library</code>
      * </ul>
      *
      * @param field Field name.
@@ -148,7 +172,6 @@ public class Utils {
     }
 
     private static Object getMappedContextValue(String[] searchPath, Map<String, Object> payload) {
-
         if (isEmpty(payload)) {
             return null;
         }
@@ -181,7 +204,6 @@ public class Utils {
                 }
             }
         }
-
         return null;
     }
 }

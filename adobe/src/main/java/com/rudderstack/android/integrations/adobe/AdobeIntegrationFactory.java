@@ -22,7 +22,6 @@ import com.google.gson.JsonParseException;
 import com.rudderstack.android.sdk.core.MessageType;
 import com.rudderstack.android.sdk.core.RudderClient;
 import com.rudderstack.android.sdk.core.RudderConfig;
-import com.rudderstack.android.sdk.core.RudderContext;
 import com.rudderstack.android.sdk.core.RudderIntegration;
 import com.rudderstack.android.sdk.core.RudderLogger;
 import com.rudderstack.android.sdk.core.RudderMessage;
@@ -37,8 +36,10 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 
 public class AdobeIntegrationFactory extends RudderIntegration<Void> {
@@ -102,13 +103,13 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
                         Map<String, Object> videoEventsMap = Utils.getMappedRudderEvents(videoEventsMaps, true);
 
                         return new AdobeDestinationConfig(
-                                Utils.getString(jsonObject,"heartbeatTrackingServerUrl"),
+                                Utils.getStringFromJSON(jsonObject,"heartbeatTrackingServerUrl"),
                                 contextDataMap,
                                 rudderEventsToAdobeEventsMap,
                                 videoEventsMap,
                                 jsonObject.get("sslHeartbeat").getAsBoolean(),
-                                Utils.getString(jsonObject, "contextDataPrefix"),
-                                Utils.getString(jsonObject, "productIdentifier"),
+                                Utils.getStringFromJSON(jsonObject, "contextDataPrefix"),
+                                Utils.getStringFromJSON(jsonObject, "productIdentifier"),
                                 rudderConfig.isTrackLifecycleEvents()
                         );
                     }
@@ -222,14 +223,18 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
                         return;
                     }
 
-                    if(!destinationConfig.isTrackLifecycleEvents)
-                        if (destinationConfig.rudderEventsToAdobeEvents == null
-                                || destinationConfig.rudderEventsToAdobeEvents.size() == 0
-                                || !destinationConfig.rudderEventsToAdobeEvents.containsKey(eventName)) {
-                            RudderLogger.logDebug("Event must be either configured in Adobe and in the Rudderstack setting, "
-                                    + "or it should be a reserved Adobe Ecommerce or Video event.");
-                            return;
-                        }
+                    if(destinationConfig.isTrackLifecycleEvents && isTrackLifeCycleEvents(eventName)) {
+                        Analytics.trackAction(eventName, null);
+                        return;
+                    }
+
+                    if (destinationConfig.rudderEventsToAdobeEvents == null
+                            || destinationConfig.rudderEventsToAdobeEvents.size() == 0
+                            || !destinationConfig.rudderEventsToAdobeEvents.containsKey(eventName)) {
+                        RudderLogger.logDebug("Event must be either configured in Adobe and in the Rudderstack setting, "
+                                + "or it should be a reserved Adobe Ecommerce or Video event.");
+                        return;
+                    }
 
                     // Custom Track call
                     Map<String, Object> contextData = getCustomMappedAndExtraProperties(element);
@@ -243,8 +248,7 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
                         return;
                     }
                     if(Utils.isEmpty(element.getProperties())){
-                        RudderLogger.logDebug("Analytics.trackState(" + screenName + ") eventProperties is null");
-                        return;
+                        RudderLogger.logVerbose("Analytics.trackState(" + screenName + ") eventProperties is null");
                     }
                     Map<String, Object> contextDataScreen = getCustomMappedAndExtraProperties(element);
                     Analytics.trackState(screenName, contextDataScreen);
@@ -255,6 +259,15 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
                     break;
             }
         }
+    }
+
+    private boolean isTrackLifeCycleEvents(String eventName) {
+        Set<String> lifeCycleEvents = new HashSet<>();
+        lifeCycleEvents.add("Application Installed");
+        lifeCycleEvents.add("Application Updated");
+        lifeCycleEvents.add("Application Opened");
+        lifeCycleEvents.add("Application Backgrounded");
+        return lifeCycleEvents.contains(eventName);
     }
 
     private String getVideoEvent(String eventName) {
@@ -299,7 +312,7 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
         // 'productId' at the root level.
         else if (!Utils.isEmpty(eventProperties)){
             try {
-                products = getProductsStrings(eventProperties);
+                products = getProductString(eventProperties);
                 eventProperties.remove("category");
                 eventProperties.remove("quantity");
                 eventProperties.remove("price");
@@ -312,8 +325,8 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
                     eventProperties.remove(destinationConfig.productIdentifier);
                 }
             } catch (IllegalArgumentException e) {
-                RudderLogger.logDebug("You must provide a name for each product to pass an ecommerce event"
-                        + "to Adobe Analytics.");
+                RudderLogger.logDebug("The Product Identifier configured on the dashboard must be "
+                        + "present for each product to pass that product to Adobe Analytics.");
             }
         }
 
@@ -321,15 +334,14 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
             contextData.put("&&products", products);
         }
 
-        if (!Utils.isEmpty(eventProperties) && eventProperties.containsKey("order_id")) {
-            contextData.put("purchaseid", eventProperties.get("order_id"));
-            eventProperties.remove("order_id");
-        }
-
-        if (!Utils.isEmpty(eventProperties) && eventProperties.containsKey("orderId")) {
-            contextData.put("purchaseid", eventProperties.get("orderId"));
-            eventProperties.remove("orderId");
-        }
+        if (!Utils.isEmpty(eventProperties))
+            if (eventProperties.containsKey("order_id")) {
+                contextData.put("purchaseid", eventProperties.get("order_id"));
+                eventProperties.remove("order_id");
+            } else if (eventProperties.containsKey("orderId")) {
+                contextData.put("purchaseid", eventProperties.get("orderId"));
+                eventProperties.remove("orderId");
+            }
 
         contextData.putAll(getCustomMappedAndExtraProperties(element));
 
@@ -387,26 +399,34 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
             arrayList.addAll((Collection<?>) object);
             return new JSONArray(arrayList);
         }
-        return new JSONArray((ArrayList) object);
+        try {
+            return new JSONArray((ArrayList) object);
+        } catch (Exception e) {
+            RudderLogger.logDebug("Error while converting the products array to JSONArray type");
+        }
+        return null;
     }
 
     // Get the products in the String format.
     private String getProductsString(JSONArray products) throws JSONException {
+        if (Utils.isEmpty(products)) {
+            return null;
+        }
+
         StringBuilder productsString = new StringBuilder();
         for(int i = 0; i < products.length(); i++) {
             JSONObject productObject = (JSONObject) products.get(i);
-            Map<String, Object> product = new HashMap<>();
-            product.putAll(new Gson().fromJson(productObject.toString(), HashMap.class));
+            HashMap product = new Gson().fromJson(productObject.toString(), HashMap.class);
 
             try {
-                String productString = getProductsStrings(product);
+                String productString = getProductString(product);
                 if(productsString.length() != 0) {
                     productsString.append(",");
                 }
                 productsString.append(productString);
             } catch (IllegalArgumentException e) {
-                RudderLogger.logDebug("You must provide a name for each product to pass an ecommerce event"
-                        + "to Adobe Analytics.");
+                RudderLogger.logDebug("The Product Identifier configured on the dashboard must be "
+                        + "present for each product to pass that product to Adobe Analytics.");
             }
         }
         return productsString.toString();
@@ -420,7 +440,7 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
      *
      * @throws IllegalArgumentException if the product does not have an ID.
      */
-    private String getProductsStrings(Map<String, Object> product) {
+    private String getProductString(Map<String, Object> product) {
         StringBuilder productString = new StringBuilder();
 
         if(product.containsKey("category")) {
@@ -442,7 +462,7 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
         int quantity= 1;
         if(product.containsKey("quantity")) {
             String q = Utils.getString(product.get("quantity"));
-            productString.append(Utils.getString(q));
+            productString.append(q);
             if (q != null) {
                 try {
                     quantity = Integer.parseInt(q);
