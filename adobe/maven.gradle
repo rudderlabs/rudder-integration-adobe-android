@@ -43,7 +43,7 @@ uploadArchives {
             }
 
             pom.project {
-                name 'Rudder-Integration-Kochava-Android'
+                name 'Rudder-Integration-Adobe-Android'
                 artifactId 'adobe'
                 packaging 'aar'
                 description 'RudderStack\'s Native SDK Integration support for Adobe.'
