@@ -15,7 +15,8 @@ implementation 'com.rudderstack.android.sdk:core:1.+'
 implementation 'com.rudderstack.android.integration:adobe:1.0.0'
 implementation 'com.google.code.gson:gson:2.8.6'
 
-// Adobe dependencies here
+// Adobe dependencies
+    implementation group: 'com.adobe.mobile', name: 'adobeMobileLibrary', version: '4.18.2'
 ```
 
 5. Finally change the initialization of your `RudderClient` in your `Application` class:
@@ -30,6 +31,11 @@ val rudderClient = RudderClient.getInstance(
         .build()
 )
 ```
+## Configure the app, as follows:
+
+Configure the ADBMobile.json at [Adobe Mobile Services](https://mobilemarketing.adobe.com) and download file and save it in your sample-kotlin -> main -> assets (create the folder if it is not present).
+Inside the adobe -> libs -> MediaSDK.jar, import it as library.
+Map any custom track or screen events, or, context data to Rudderstack dashboard.
 
 ## Send Events
 
