@@ -285,6 +285,14 @@ public class AdobeIntegrationFactory extends RudderIntegration<Void> {
     }
 
     @Override
+    public void flush() {
+        super.flush();
+
+        Analytics.sendQueuedHits();
+        RudderLogger.logVerbose("Analytics.sendQueuedHits();");
+    }
+
+    @Override
     public void dump(@Nullable RudderMessage element) {
         try {
             if (element != null) {
