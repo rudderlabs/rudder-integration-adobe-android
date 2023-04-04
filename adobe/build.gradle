@@ -23,8 +23,8 @@ android {
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation 'androidx.annotation:annotation:1.1.0'
-    implementation 'androidx.appcompat:appcompat:1.2.0'
+    implementation 'androidx.annotation:annotation:1.6.0'
+    implementation 'androidx.appcompat:appcompat:1.6.1'
 
     // RudderStack Android SDK
     compileOnly 'com.rudderstack.android.sdk:core:[1.7.0, 1.12.0]'
@@ -34,6 +34,14 @@ dependencies {
     // Adobe Analytics
     implementation 'com.adobe.mobile:adobeMobileLibrary:4.18.2'
     implementation files('libs/MediaSDK.jar')
+
+    // Adobe - new
+    implementation 'com.adobe.marketing.mobile:core:2.1.0'
+    implementation 'com.adobe.marketing.mobile:analytics:2.0.2'
+    implementation 'com.adobe.marketing.mobile:identity:2.0.1'
+    implementation 'com.adobe.marketing.mobile:assurance:2.0.1'
+    implementation 'com.adobe.marketing.mobile:media:3.0.0'
 }
 
-//apply from: './maven.gradle'
+apply from: rootProject.file('gradle/mvn-publish.gradle')
+apply from: rootProject.file('gradle/codecov.gradle')
