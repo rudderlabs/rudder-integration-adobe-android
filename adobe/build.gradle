@@ -39,7 +39,6 @@ dependencies {
     implementation 'com.adobe.marketing.mobile:core:2.1.0'
     implementation 'com.adobe.marketing.mobile:analytics:2.0.2'
     implementation 'com.adobe.marketing.mobile:identity:2.0.1'
-    implementation 'com.adobe.marketing.mobile:assurance:2.0.1'
     implementation 'com.adobe.marketing.mobile:media:3.0.0'
 }
 
