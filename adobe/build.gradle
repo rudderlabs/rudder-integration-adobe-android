@@ -26,19 +26,22 @@ dependencies {
     implementation 'androidx.annotation:annotation:1.6.0'
     implementation 'androidx.appcompat:appcompat:1.6.1'
 
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation "org.mockito:mockito-core:4.0.0"
+    testImplementation 'org.json:json:20220924'
+    testImplementation "com.rudderstack.android.sdk:core:[1.7.0, 2.0)"
+
     // RudderStack Android SDK
-    compileOnly 'com.rudderstack.android.sdk:core:[1.7.0, 1.12.0]'
+    compileOnly 'com.rudderstack.android.sdk:core:[1.7.0, 2.0)'
     // GSON
     implementation 'com.google.code.gson:gson:2.10.1'
 
-    // Adobe Analytics
-    implementation 'com.adobe.mobile:adobeMobileLibrary:4.18.2'
-    implementation files('libs/MediaSDK.jar')
-
-    // Adobe - new
-    implementation 'com.adobe.marketing.mobile:core:2.1.0'
+    // Adobe libraries
+    implementation 'com.adobe.marketing.mobile:core:2.1.1'
     implementation 'com.adobe.marketing.mobile:analytics:2.0.2'
-    implementation 'com.adobe.marketing.mobile:identity:2.0.1'
+    implementation 'com.adobe.marketing.mobile:identity:2.0.2'
+    implementation 'com.adobe.marketing.mobile:lifecycle:2.0.1'
+    // Adobe Media library
     implementation 'com.adobe.marketing.mobile:media:3.0.0'
 }
 

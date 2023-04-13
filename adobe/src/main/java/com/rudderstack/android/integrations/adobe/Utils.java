@@ -12,21 +12,22 @@ import org.json.JSONArray;
 import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class Utils {
 
     // Get the mapping of 'custom events', 'context data' & 'video events',
-    // done at Rudderstack dashboard
-    public static Map<String, Object> getMappedRudderEvents(JsonArray mappedERudderEvents, boolean isVideoMappedEvent) {
+    // done at RudderStack dashboard
+    public static Map<String, String> getMappedRudderEvents(JsonArray mappedERudderEvents, boolean isVideoMappedEvent) {
         if(isEmpty(mappedERudderEvents)) {
             return null;
         }
-        Map<String, Object> mappedEvents = new HashMap<>();
+        Map<String, String> mappedEvents = new HashMap<>();
         for (int i = 0; i < mappedERudderEvents.size(); i++) {
             JsonObject eventObject = (JsonObject) mappedERudderEvents.get(i);
             String eventName = eventObject.get("from").getAsString();
-            Object eventValue = eventObject.get("to").getAsString();
+            String eventValue = eventObject.get("to").getAsString();
             if (isVideoMappedEvent &&
                     (eventValue.equals("initHeartbeat") || eventValue.equals("heartbeatUpdatePlayhead"))) {
                 continue;
@@ -50,7 +51,7 @@ public class Utils {
         }
 
         if (value instanceof Map) {
-            return (((Map<String, Object>) value).size() == 0);
+            return (((Map<?, ?>) value).size() == 0);
         }
 
         if (value instanceof String) {
@@ -60,18 +61,6 @@ public class Utils {
         return false;
     }
 
-//    public static boolean isEmpty(JsonArray value) {
-//        return (value == null || value.size() == 0);
-//    }
-
-//    public static boolean isEmpty(Map<String, Object> val){
-//        return (val == null || val.size() == 0);
-//    }
-
-//    public static boolean isEmpty(String val) {
-//        return (val == null || val.trim().isEmpty());
-//    }
-
     public static String getStringFromJSON(JsonObject jsonObject, String value) {
         if (jsonObject.has(value)) {
             return jsonObject.get(value).getAsString();
@@ -80,10 +69,14 @@ public class Utils {
     }
 
     public static boolean getBoolean(Object value, boolean defaultValue) {
+        if (value == null) {
+            return defaultValue;
+        }
         if (value instanceof Boolean) {
-            return (boolean) value;
-        } else if (value instanceof String) {
-            return Boolean.valueOf((String) value);
+            return (Boolean) value;
+        }
+        if (value instanceof String) {
+            return Boolean.parseBoolean((String) value);
         }
         return defaultValue;
     }
@@ -105,7 +98,7 @@ public class Utils {
             return ((Number) value).doubleValue();
         } else if (value instanceof String) {
             try {
-                return Double.valueOf((String) value);
+                return Double.parseDouble((String) value);
             } catch (NumberFormatException ignored) {
                 RudderLogger.logDebug("Unable to convert the value: " + value +
                         " to Double, using the defaultValue: " + defaultValue);
@@ -122,7 +115,7 @@ public class Utils {
             return ((Number) value).longValue();
         } else if (value instanceof String) {
             try {
-                return Long.valueOf((String) value);
+                return Long.parseLong((String) value);
             } catch (NumberFormatException ignored) {
                 RudderLogger.logDebug("Unable to convert the value: " + value +
                         " to Long, using the defaultValue: " + defaultValue);
@@ -148,9 +141,10 @@ public class Utils {
      * @param element Event payload.
      * @return The value if found, <code>null</code> otherwise.
      */
-    public static Object getMappedContextValue(String field, RudderMessage element) {
+    public static String getMappedContextValue(String field, RudderMessage element) {
         if (field == null || field.trim().length() == 0) {
-            throw new IllegalArgumentException("The field name must be defined");
+            RudderLogger.logDebug("Error occurred while handling custom properties");
+            return null;
         }
         String[] searchPaths = field.split("\\.");
 
@@ -168,14 +162,14 @@ public class Utils {
             searchPaths = Arrays.copyOfRange(searchPaths, 1, searchPaths.length);
         }
 
-        return getMappedContextValue(searchPaths, payload);
+        return Utils.getString(getMappedContextValue(searchPaths, payload));
     }
 
     private static Object getMappedContextValue(String[] searchPath, Map<String, Object> payload) {
         if (isEmpty(payload)) {
             return null;
         }
-        Map<String, Object> totalPayload = payload;
+        Map<?, ?> totalPayload = payload;
         for (int i = 0; i < searchPath.length; i++) {
             String path = searchPath[i];
 
@@ -198,12 +192,20 @@ public class Utils {
 
             if (currentPayload instanceof Map) {
                 try {
-                    totalPayload = (Map<String, Object>) currentPayload;
+                    totalPayload = (Map<?, ?>) currentPayload;
                 } catch (ClassCastException e) {
                     return null;
                 }
             }
         }
         return null;
+    }
+
+    static boolean isProductIsList(Object products) {
+        if (products instanceof List) {
+            List<?> productsList = (List<?>) products;
+            return !productsList.isEmpty() && productsList.get(0) instanceof Map;
+        }
+        return false;
     }
 }

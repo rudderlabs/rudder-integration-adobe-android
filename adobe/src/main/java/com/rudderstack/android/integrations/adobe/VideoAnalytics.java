@@ -14,7 +14,7 @@ import java.util.Map;
 public class VideoAnalytics {
     private String heartbeatTrackingServerUrl;
     private String prefix;
-    private Map<String, Object> contextData;
+    private Map<String, String> contextData;
     private boolean ssl;
     private boolean debug;
     private boolean sessionStarted;
@@ -55,7 +55,7 @@ public class VideoAnalytics {
     VideoAnalytics(
             Context context,
             String serverUrl,
-            Map<String, Object> contextData,
+            Map<String, String> contextData,
             boolean ssl,
             String prefix) {
         this(context, serverUrl, contextData, ssl, new HeartbeatFactory(), prefix);
@@ -63,7 +63,7 @@ public class VideoAnalytics {
     public VideoAnalytics(
             Context context,
             String heartbeatTrackingServerUrl,
-            Map<String, Object> contextData,
+            Map<String, String> contextData,
             boolean ssl,
             HeartbeatFactory heartbeatFactory,
             String prefix
@@ -428,7 +428,7 @@ public class VideoAnalytics {
                     }
 
                     if (mappedContextValue != null) {
-                        String mappedContextName = Utils.getString(contextData.get(field));
+                        String mappedContextName = contextData.get(field);
                         cdata.put(mappedContextName, String.valueOf(mappedContextValue));
                         if (!Utils.isEmpty(extraProperties)) {
                             extraProperties.remove(field);

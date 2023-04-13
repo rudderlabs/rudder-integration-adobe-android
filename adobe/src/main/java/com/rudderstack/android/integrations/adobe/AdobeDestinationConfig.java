@@ -4,24 +4,23 @@ import java.util.Map;
 
 public class AdobeDestinationConfig {
     final String heartbeatTrackingServerUrl;
-    final Map<String, Object> contextData;
-    final Map<String, Object> rudderEventsToAdobeEvents;
-    final Map<String, Object> videoEvents;
+    final Map<String, String> contextData;
+    final Map<String, String> rudderEventsToAdobeEvents;
+    final Map<String, String> videoEvents;
     final boolean ssl;
     final String contextDataPrefix;
     final String productIdentifier;
     final boolean isTrackLifecycleEvents;
 
-    public AdobeDestinationConfig
-            (String heartbeatTrackingServerUrl,
-             Map<String, Object> contextData,
-             Map<String, Object> rudderEventsToAdobeEvents,
-             Map<String, Object> videoEvents,
-             boolean ssl,
-             String contextDataPrefix,
-             String productIdentifier,
-             boolean isTrackLifecycleEvents) {
-
+    public AdobeDestinationConfig (
+            String heartbeatTrackingServerUrl,
+            Map<String, String> contextData,
+            Map<String, String> rudderEventsToAdobeEvents,
+            Map<String, String> videoEvents,
+            boolean ssl,
+            String contextDataPrefix,
+            String productIdentifier,
+            boolean isTrackLifecycleEvents) {
         this.contextData = contextData;
         this.heartbeatTrackingServerUrl = heartbeatTrackingServerUrl;
         this.rudderEventsToAdobeEvents = rudderEventsToAdobeEvents;
@@ -33,8 +32,7 @@ public class AdobeDestinationConfig {
         // "a." is reserved by Adobe Analytics
         if (contextDataPrefix == null || contextDataPrefix.equals("a.")) {
             this.contextDataPrefix = "";
-        }
-        else {
+        } else {
             this.contextDataPrefix = contextDataPrefix;
         }
     }
