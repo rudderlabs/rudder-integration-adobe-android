@@ -3,14 +3,11 @@
 apply plugin: 'com.android.library'
 
 android {
-    compileSdkVersion 30
-    buildToolsVersion "29.0.3"
+    compileSdkVersion 33
 
     defaultConfig {
-        minSdkVersion 14
-        targetSdkVersion 30
-        versionCode 1
-        versionName "1.0.0"
+        minSdkVersion 19
+        targetSdkVersion 33
     }
 
     buildTypes {
@@ -19,22 +16,32 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
+    namespace 'com.rudderstack.android.integrations.adobe'
 }
 
 
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation 'androidx.annotation:annotation:1.1.0'
-    implementation 'androidx.appcompat:appcompat:1.2.0'
-    implementation files('libs/MediaSDK.jar')
-    // rudder core sdk
-    compileOnly 'com.rudderstack.android.sdk:core:1.+'
-    // GSON dependency
-    implementation 'com.google.code.gson:gson:2.8.6'
+    implementation 'androidx.annotation:annotation:1.6.0'
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+
+    // RudderStack Android SDK
+    compileOnly 'com.rudderstack.android.sdk:core:[1.7.0, 1.12.0]'
+    // GSON
+    implementation 'com.google.code.gson:gson:2.10.1'
 
     // Adobe Analytics
     implementation 'com.adobe.mobile:adobeMobileLibrary:4.18.2'
+    implementation files('libs/MediaSDK.jar')
+
+    // Adobe - new
+    implementation 'com.adobe.marketing.mobile:core:2.1.0'
+    implementation 'com.adobe.marketing.mobile:analytics:2.0.2'
+    implementation 'com.adobe.marketing.mobile:identity:2.0.1'
+    implementation 'com.adobe.marketing.mobile:assurance:2.0.1'
+    implementation 'com.adobe.marketing.mobile:media:3.0.0'
 }
 
-//apply from: './maven.gradle'
+apply from: rootProject.file('gradle/mvn-publish.gradle')
+apply from: rootProject.file('gradle/codecov.gradle')
